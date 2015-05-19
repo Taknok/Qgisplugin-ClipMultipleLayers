@@ -194,7 +194,7 @@ class ClipMultipleLayers:
         if result:
             
             
-            
+            # create a class to return custom error
             class Error(Exception):
                 def __init__(self, value):
                     self.value = value
@@ -202,16 +202,14 @@ class ClipMultipleLayers:
                     return repr(self.value)
             
             
-            
-            print u"Create a layer named 'selection' with the sams CRS of the project"
-            
-            
             legend = iface.legendInterface()
+            layers = iface.legendInterface().layers()
             
-            
+            #find the path of the project
             path_project = QgsProject.instance().fileName()
             path_project = path_project[:path_project.rfind("/"):]
             
+            #search existence of output folder, if not create it
             directory = path_project + "/output/vectors"
             if not os.path.exists(directory):
                 os.makedirs(directory)
@@ -221,24 +219,25 @@ class ClipMultipleLayers:
                 os.makedirs(directory)
             
             
-            
-            layers = iface.legendInterface().layers()
-            
+            #search the layer selection
             trouvee = 0
             for layer in layers :
                 if layer.type() == QgsMapLayer.VectorLayer and layer.name() == "selection" :
                     selection = layer
                     trouvee = 1
-                    print "Layer selection found !"
+
                 if trouvee == 0 :
-                    raise Error ("Layer selection not found ! or the layer insn't a vector layer")
+                    raise Error ("Layer selection not found ! or the layer isn't a vector layer")
             
+            
+            #clip part
             for layer in layers  :
-                print layer.name()
+                #clip vector layer (if displayed)
                 if layer.type() == QgsMapLayer.VectorLayer and layer != selection and legend.isLayerVisible(layer) == True :
                     output = path_project + "/output/vectors/clip_" + layer.name() + ".shp"
                     processing.runalg("qgis:clip",layer,selection,output)
                 
+                #clip raster layer (if displayed)
                 if layer.type() == QgsMapLayer.RasterLayer and legend.isLayerVisible(layer) == True :
                     output = path_project + "/output/rasters/clip-" + layer.name() + ".tif"
                     command_cut = "gdalwarp -q -cutline %s -crop_to_cutline -of GTiff %s %s " % ( selection.source(), layer.source(), output )
