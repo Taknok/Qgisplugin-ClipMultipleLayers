@@ -78,7 +78,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Clip all active layer with the layer selection :</string>
+    <string>Clip all display layer with the layer selection :</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_5">
