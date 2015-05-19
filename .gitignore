@@ -17,6 +17,17 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+#Fichier de creation du module
+*.pyc
+pylintrc
+pb_tool.cfg
+Makefile
+
+#Dossier creation module
+.help
+.i18n
+.scripts
+
 # =========================
 # Operating System Files
 # =========================
