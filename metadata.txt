@@ -38,20 +38,18 @@ email=pg.developper.fr@gmail.com
 # Recommended items:
 
 # Uncomment the following line and add your changelog:
-#
-
-changelog=
+#changelog=
 
 # Tags are comma separated with spaces allowed
 
 tags=clip, clipper, all, once, layer, raster, vector, rasters, vectors, multiple
 
 
-homepage=https://github.com/Taknok/Qgisplugin-Clip-Multiple-Layers
+homepage=https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/wiki
 
-tracker=https://github.com/Taknok/Qgisplugin-Clip-Multiple-Layers/issues
+tracker=https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues
 
-repository=https://github.com/Taknok/Qgisplugin-Clip-Multiple-Layers
+repository=https://github.com/Taknok/Qgisplugin-ClipMultipleLayers
 category=Plugins
 icon=icon.png
 
