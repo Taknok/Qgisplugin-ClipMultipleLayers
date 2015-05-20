@@ -1,19 +1,13 @@
 # This file contains metadata for your plugin. Since 
-
 # version 2.0 of QGIS this is the proper way to supply 
-
 # information about a plugin. The old method of 
-
 # embedding metadata in __init__.py will 
-
 # is no longer supported since version 2.0.
-
-
 # This file should be included when you package your plugin.
+
 # Mandatory items:
 
 [general]
-
 
 name=Clip Multiple Layers
 
@@ -28,7 +22,6 @@ author=Pg
 email=pg.developper.fr@gmail.com
 
 
-
 # End of mandatory metadata
 
 
@@ -38,24 +31,13 @@ email=pg.developper.fr@gmail.com
 # Recommended items:
 
 # Uncomment the following line and add your changelog:
-<<<<<<< HEAD
-
-
 #changelog=
 
-=======
-#changelog=
->>>>>>> origin/master
 
 # Tags are comma separated with spaces allowed
-
-tags=clip, clipper, all, once, layer, raster, vector, multiple
-
-
+tags=clip, clipper, all, once, layer, raster, vector, multipl
 homepage=https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/wiki
-
 tracker=https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues
-
 repository=https://github.com/Taknok/Qgisplugin-ClipMultipleLayers
 category=Plugins
 icon=icon.png
