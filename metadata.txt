@@ -35,7 +35,7 @@ email=pg.developper.fr@gmail.com
 
 
 # Tags are comma separated with spaces allowed
-tags=clip, clipper, all, once, layer, raster, vector, multipl
+tags=clip, clipper, all, once, layer, raster, vector, multiple
 homepage=https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/wiki
 tracker=https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues
 repository=https://github.com/Taknok/Qgisplugin-ClipMultipleLayers
