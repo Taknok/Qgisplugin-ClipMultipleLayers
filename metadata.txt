@@ -13,7 +13,7 @@ name=Clip Multiple Layers
 
 qgisMinimumVersion=2.0
 
-description=Clip all display layers (rasters and vectors) with a layer named selection for model
+description=Clip all displayed layers (rasters and vectors) with a layer named selection for model
 
 version=0.1
 
