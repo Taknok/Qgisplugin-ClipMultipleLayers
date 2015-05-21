@@ -226,8 +226,8 @@ class ClipMultipleLayers:
                     selection = layer
                     trouvee = 1
 
-                if trouvee == 0 :
-                    raise Error ("Layer selection not found ! or the layer isn't a vector layer")
+            if trouvee == 0 :
+                raise Error ("Layer selection not found ! or the layer isn't a vector layer")
             
             
             #clip part
