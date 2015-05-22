@@ -240,5 +240,5 @@ class ClipMultipleLayers:
                 #clip raster layer (if displayed)
                 if layer.type() == QgsMapLayer.RasterLayer and legend.isLayerVisible(layer) == True :
                     output = path_project + "/output/rasters/clip-" + layer.name() + ".tif"
-                    command_cut = "gdalwarp -q -cutline %s -crop_to_cutline -of GTiff %s %s " % ( selection.source(), layer.source(), output )
+                    command_cut = "gdalwarp -q -cutline %s -crop_to_cutline -of GTiff %s %s" % ( selection.source(), layer.source(), output )
                     subprocess.call(command_cut)
