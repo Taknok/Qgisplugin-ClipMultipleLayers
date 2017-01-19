@@ -11,16 +11,17 @@
 
 name=Clip Multiple Layers
 
-qgisMinimumVersion=2.0
+qgisMinimumVersion=2.18
 
-description=Clip all displayed layers (rasters and vectors) with a layer named selection for model
+description=Clip all displayed layers (rasters and vectors) with a polygon layer selected.
 
-version=0.1
+version=0.1.4
 
 author=Pg
 
 email=pg.developper.fr@gmail.com
 
+about=Clip all displayed layers (rasters and vectors) with a polygon layer selected.
 
 # End of mandatory metadata
 
@@ -31,7 +32,7 @@ email=pg.developper.fr@gmail.com
 # Recommended items:
 
 # Uncomment the following line and add your changelog:
-#changelog=
+changelog=update to qgis 2.18
 
 
 # Tags are comma separated with spaces allowed
