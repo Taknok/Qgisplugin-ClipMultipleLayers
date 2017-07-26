@@ -21,12 +21,14 @@
  ***************************************************************************/
 """
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
-from PyQt4.QtGui import QAction, QIcon
+from PyQt4.QtGui import QAction, QIcon, QFileDialog
 # Initialize Qt resources from file resources.py
 import resources_rc
 # Import the code for the dialog
 from Clip_Multiple_Layers_dialog import ClipMultipleLayersDialog
 import os.path
+import os
+import errno
 
 from PyQt4.QtGui import QMessageBox
 import processing, os, subprocess
@@ -72,6 +74,12 @@ class ClipMultipleLayers:
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'ClipMultipleLayers')
         self.toolbar.setObjectName(u'ClipMultipleLayers')
+
+        
+
+        self.dlg.lineEdit.clear()
+        self.initFolder();
+        self.dlg.pushButton.clicked.connect(self.selectOutputFile);
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -183,6 +191,21 @@ class ClipMultipleLayers:
         # remove the toolbar
         del self.toolbar
 
+    def initFolder(self):
+        path_project = QgsProject.instance().fileName()
+        path_project = path_project[:path_project.rfind("/"):]
+
+        self.folderName = path_project
+
+        self.dlg.lineEdit.setText(self.folderName);
+
+    def selectOutputFile(self):
+        folderTmp = QFileDialog.getExistingDirectory(self.dlg, "Select output folder ", self.folderName)
+
+        if folderTmp != "":
+            self.folderName = folderTmp
+
+        self.dlg.lineEdit.setText(self.folderName);
 
     def run(self):
         """Run method that performs all the real work"""
@@ -202,20 +225,19 @@ class ClipMultipleLayers:
             index = self.dlg.comboBox.currentIndex()
             selection = self.dlg.comboBox.itemData(index)
             
-            
             legend = iface.legendInterface()
             layers = iface.legendInterface().layers()
             
-            #find the path of the project
-            path_project = QgsProject.instance().fileName()
-            path_project = path_project[:path_project.rfind("/"):]
-            
             #search existence of output folder, if not create it
-            directory = path_project + "/output/vectors"
+            if not os.path.isdir(self.folderName):
+                raise FileNotFoundError(
+                    errno.ENOENT, os.strerror(errno.ENOENT), self.folderName)
+
+            directory = self.folderName + "/vectors"
             if not os.path.exists(directory):
                 os.makedirs(directory)
                 
-            directory = path_project + "/output/rasters"
+            directory = self.folderName + "/rasters"
             if not os.path.exists(directory):
                 os.makedirs(directory)
             
@@ -226,12 +248,11 @@ class ClipMultipleLayers:
             for layer in layers  :
                 #clip vector layer (if displayed)
                 if layer.type() == QgsMapLayer.VectorLayer and layer != selection and legend.isLayerVisible(layer) == True :
-                    output = path_project + "/output/vectors/clip_" + layer.name() + ".shp"
+                    output = self.folderName + "/vectors/clip_" + layer.name() + ".shp"
                     processing.runalg("qgis:intersection",layer,selection,0,output)
                 
                 #clip raster layer (if displayed)
                 if layer.type() == QgsMapLayer.RasterLayer and legend.isLayerVisible(layer) == True :
-                    output = path_project + "/output/rasters/clip-" + layer.name() + ".tif"
-                    command_cut = "gdalwarp -ot Float32 -q -of GTiff -cutline %s -co COMPRESS=NONE %s %s " % ( selection.source(), layer.source(), output )
-                    subprocess.call(command_cut)
+                    output = self.folderName + "/rasters/clip_" + layer.name() + ".tif"
+                    processing.runalg("gdalogr:cliprasterbymasklayer", layer.source(), selection.source(), None, False, False, True, 5, 0, 1, 1, 1, False, 0, False, "-overwrite", output)
 
