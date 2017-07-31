@@ -26,7 +26,6 @@ from PyQt4.QtGui import QAction, QIcon, QFileDialog
 import resources_rc
 # Import the code for the dialog
 from Clip_Multiple_Layers_dialog import ClipMultipleLayersDialog
-import os.path
 import os
 import errno
 
@@ -35,6 +34,7 @@ import processing, os, subprocess
 from qgis.utils import *
 from qgis.core import *
 
+from processing.algs.gdal.GdalUtils import GdalUtils
 
 class ClipMultipleLayers:
     """QGIS Plugin Implementation."""
@@ -254,6 +254,10 @@ class ClipMultipleLayers:
                 
                 #clip raster layer (if displayed)
                 if layer.type() == QgsMapLayer.RasterLayer and legend.isLayerVisible(layer) == True :
-                    output = self.folderName + "/rasters/clip_" + layer.name() + ".tif"
+                    # get extension about the raster
+                    filename, file_extension = os.path.splitext(layer.source())
+
+                    # clip the raster
+                    output = self.folderName + "/rasters/clip_" + layer.name() + file_extension
                     processing.runalg("gdalogr:cliprasterbymasklayer", layer.source(), selection.source(), None, False, False, True, 5, 0, 1, 1, 1, False, 0, False, "-overwrite", output)
 
