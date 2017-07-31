@@ -215,7 +215,8 @@ class ClipMultipleLayers:
         layers = QgsMapLayerRegistry.instance().mapLayers().values()
         for layer in layers:
             if layer.type() == QgsMapLayer.VectorLayer and layer.wkbType() == QGis.WKBPolygon :
-                self.dlg.comboBox.addItem( layer.name(), layer ) 
+                self.dlg.comboBox.clear()
+                self.dlg.comboBox.addItem( layer.name(), layer )
         
         # Run the dialog event loop
         result = self.dlg.exec_()
