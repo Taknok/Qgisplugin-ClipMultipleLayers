@@ -15,7 +15,7 @@ qgisMinimumVersion=2.18
 
 description=Clip all displayed layers (rasters and vectors) with a polygon layer selected.
 
-version=0.1.5
+version=0.1.6
 
 author=Pg
 
