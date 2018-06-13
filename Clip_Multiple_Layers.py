@@ -259,5 +259,5 @@ class ClipMultipleLayers:
 
                     # clip the raster
                     output = self.folderName + "/rasters/clip_" + layer.name() + file_extension
-                    processing.runalg("gdalogr:cliprasterbymasklayer", layer.source(), selection.source(), None, False, False, True, 5, 0, 1, 1, 1, False, 0, False, "-overwrite", output)
+                    processing.runalg("gdalogr:cliprasterbymasklayer", layer.source(), selection.source(), None, False, True, True, 5, 0, 1, 1, 1, False, 0, False, "-overwrite", output)
 
