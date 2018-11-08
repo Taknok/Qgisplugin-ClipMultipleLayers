@@ -9,6 +9,7 @@ You can report a issue [here](https://github.com/Taknok/Qgisplugin-ClipMultipleL
 ## Developers :
 Compile `ressources.py` with OSGeo4W Shell and the command : `pyrcc5 -o resources.py resources.qrc`
 
-Edit `clip_multiple_layers_dialog_base.ui` with QT deseigner.
+Edit `clip_multiple_layers_dialog_base.ui` with QT designer (in Qt Creator).
 
+## More :
 Feel free to grab me a beer 😊 : [Donate](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=4DC3A78C398HW)
