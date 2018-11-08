@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/plugins/ClipMultipleLayers" >
+    <qresource prefix="/plugins/clip_multiple_layers" >
         <file>icon.png</file>
     </qresource>
 </RCC>

@@ -9,14 +9,14 @@
 """
 
 __author__ = 'pg.developper.fr@gmail.com'
-__date__ = '2015-05-18'
-__copyright__ = 'Copyright 2015, Pg'
+__date__ = '2018-10-30'
+__copyright__ = 'Copyright 2018, Pg'
 
 import unittest
 
-from PyQt4.QtGui import QDialogButtonBox, QDialog
+from PyQt5.QtGui import QDialogButtonBox, QDialog
 
-from Clip_Multiple_Layers_dialog import ClipMultipleLayersDialog
+from clip_multiple_layers_dialog import ClipMultipleLayersDialog
 
 from utilities import get_qgis_app
 QGIS_APP = get_qgis_app()
