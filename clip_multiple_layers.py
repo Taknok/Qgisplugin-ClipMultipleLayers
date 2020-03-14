@@ -30,6 +30,7 @@ from .resources import *
 # Import the code for the dialog
 from .clip_multiple_layers_dialog import ClipMultipleLayersDialog
 import os.path
+import errno
 
 import processing, os, subprocess, time
 from qgis.utils import *
@@ -60,7 +61,7 @@ class ClipMultipleLayers:
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
-            'ClipMultipleLayers_{}.qm'.format(locale))
+            '{}.qm'.format(locale))
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -203,7 +204,8 @@ class ClipMultipleLayers:
         self.dlg.lineEdit.setText(self.folderName);
 
     def selectOutputFile(self):
-        folderTmp = QFileDialog.getExistingDirectory(self.dlg, "Select output folder ", self.folderName)
+        folderTmp = QFileDialog.getExistingDirectory(self.dlg,
+            self.tr("Select output folder "), self.folderName)
 
         if folderTmp != "":
             self.folderName = folderTmp
@@ -221,20 +223,41 @@ class ClipMultipleLayers:
 
     def run(self):
         """Run method that performs all the real work"""
-        # show the dialog
-        self.dlg.show()
-        
         self.dlg.comboBox.clear()
         layers = QgsProject.instance().mapLayers().values()
+        # fill selection combo, only polygon layers
+        n = 0
         for layer in layers:
-            if layer.type() == QgsMapLayer.VectorLayer :
+            if layer.type() == QgsMapLayer.VectorLayer and \
+                layer.geometryType() == QgsWkbTypes.PolygonGeometry:
                 self.dlg.comboBox.addItem( layer.name(), layer )
+                n += 1
+
+        if n == 0:  # no polygon layer
+            iface.messageBar().pushMessage(self.tr("Warning"),
+                self.tr("No polygon layer in actual project"),
+                level=Qgis.Warning)
+            return
+
+        # show the dialog
+        self.dlg.show()
         
         # Run the dialog event loop
         result = self.dlg.exec_()
         # See if OK was pressed
         if result:
-            
+            dirName = self.dlg.lineEdit.text().strip()
+            if len(dirName) == 0:
+                iface.messageBar().pushMessage(self.tr("Warning"),
+                    self.tr("Please select target folder"), level=Qgis.Warning)
+                return
+            if not (self.dlg.checkVector.isChecked() or
+                    self.dlg.checkRaster.isChecked()):
+                iface.messageBar().pushMessage(self.tr("Warning"),
+                    self.tr("Neither vector nor raster layers selected for clipping. Nothing to do. "),
+                    level=Qgis.Warning)
+                return
+
             index = self.dlg.comboBox.currentIndex()
             selection = self.dlg.comboBox.itemData(index)
             
@@ -246,15 +269,15 @@ class ClipMultipleLayers:
                     errno.ENOENT, os.strerror(errno.ENOENT), self.folderName)
 
             directory = self.folderName + "/vectors"
-            if not os.path.exists(directory):
+            if not os.path.exists(directory) and self.dlg.checkVector.isChecked():
                 os.makedirs(directory)
                 
             directory = self.folderName + "/rasters"
-            if not os.path.exists(directory):
+            if not os.path.exists(directory) and self.dlg.checkRaster.isChecked():
                 os.makedirs(directory)
             
             # Progress bar
-            progressMessageBar = iface.messageBar().createMessage("Clipping...")
+            progressMessageBar = iface.messageBar().createMessage(self.tr("Clipping..."))
             progress = QProgressBar()
             progress.setMaximum(len(checkedLayers) - 1)
             progress.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
@@ -265,27 +288,36 @@ class ClipMultipleLayers:
             #clip part
             for layer in checkedLayers  :
                 out = None
-                #clip vector layer (if displayed)
-                if layer.type() == QgsMapLayer.VectorLayer and layer != selection :
+                # clip vector layer (if displayed and checked)
+                if layer.type() == QgsMapLayer.VectorLayer and \
+                   layer != selection and self.dlg.checkVector.isChecked():
                     output = self.folderName + "/vectors/clip_" + layer.name() + ".shp"
                     
                     # check file isn't openned and is writable
                     version = 0
                     while self.isFileOpened(output):
-                        output = self.folderName + "/vectors/clip_" + layer.name() + "("+ str(version) + ").shp"
+                        output = self.folderName + "/vectors/clip_" + \
+                            layer.name() + "("+ str(version) + ").shp"
                         version +=1
 
                     processing.run("native:clip", {"INPUT" : layer.id(), "OVERLAY" : selection.id(), "OUTPUT" : output})
 
+                    # save style
+                    if self.dlg.checkStyle.isChecked():
+                        qml_output = os.path.splitext(output)[0] + ".qml"
+                        layer.saveNamedStyle(qml_output)
+                        
                     # load layer
                     if self.dlg.checkBox.isChecked():
                         out = iface.addVectorLayer(output, "", "ogr")
                         if not out:
-                            iface.messageBar().pushMessage("Error", "Could not load " +  output, level=Qgis.Warning)
+                            iface.messageBar().pushMessage(self.tr("Error"),
+                                self.tr("Could not load ") +  output,
+                                level=Qgis.Warning)
                 
-                
-                #clip raster layer (if displayed)
-                if layer.type() == QgsMapLayer.RasterLayer :
+                # clip raster layer (if displayed and checked)
+                if layer.type() == QgsMapLayer.RasterLayer and \
+                   self.dlg.checkRaster.isChecked():
                     # get extension about the raster
                     filename, file_extension = os.path.splitext(layer.source())
 
@@ -303,7 +335,7 @@ class ClipMultipleLayers:
                     if self.dlg.checkBox.isChecked():
                         out = iface.addRasterLayer(output, "")
                         if not out.isValid():
-                            iface.messageBar().pushMessage("Error", "Could not load " +  output, level=Qgis.Warning)
+                            iface.messageBar().pushMessage(self.tr("Error"), self.tr("Could not load ") +  output, level=Qgis.Warning)
                 
                 # Update progression
                 time.sleep(1)
