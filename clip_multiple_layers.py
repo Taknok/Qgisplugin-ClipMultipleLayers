@@ -300,7 +300,13 @@ class ClipMultipleLayers:
                             layer.name() + "("+ str(version) + ").shp"
                         version +=1
 
-                    processing.run("native:clip", {"INPUT" : layer.id(), "OVERLAY" : selection.id(), "OUTPUT" : output})
+                    result = processing.run("native:clip", {"INPUT" : layer.id(), "OVERLAY" : selection.id(), "OUTPUT" : "memory:"})
+
+                    # save the layer with the same encoding, crs and format as the original loaded
+                    #newName = ""
+                    # QgsVectorFileWriter.writeAsVectorFormat(result["OUTPUT"], output, layer.dataProvider().encoding(), layer.crs(), layer.dataProvider().storageType(), newFilename=newName)
+                    # use above when i know how to detect the exact name created, newFilename do no return nothing
+                    QgsVectorFileWriter.writeAsVectorFormat(result["OUTPUT"], output, layer.dataProvider().encoding(), layer.crs(), "ESRI Shapefile")
 
                     # save style
                     if self.dlg.checkStyle.isChecked():
