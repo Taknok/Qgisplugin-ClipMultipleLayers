@@ -233,6 +233,10 @@ class ClipMultipleLayers:
                 self.dlg.comboBox.addItem( layer.name(), layer )
                 n += 1
 
+        # fill selection format combo
+        for vector_format in QgsVectorFileWriter.supportedFiltersAndFormats():
+            self.dlg.comboFormatBox.addItem(vector_format.driverName, vector_format)
+
         if n == 0:  # no polygon layer
             iface.messageBar().pushMessage(self.tr("Warning"),
                 self.tr("No polygon layer in actual project"),
@@ -260,6 +264,8 @@ class ClipMultipleLayers:
 
             index = self.dlg.comboBox.currentIndex()
             selection = self.dlg.comboBox.itemData(index)
+            index = self.dlg.comboFormatBox.currentIndex()
+            format_selected = self.dlg.comboFormatBox.itemData(index)
             
             checkedLayers = QgsProject.instance().layerTreeRoot().checkedLayers()
             
@@ -291,34 +297,47 @@ class ClipMultipleLayers:
                 # clip vector layer (if displayed and checked)
                 if layer.type() == QgsMapLayer.VectorLayer and \
                    layer != selection and self.dlg.checkVector.isChecked():
-                    output = self.folderName + "/vectors/clip_" + layer.name() + ".shp"
+                    output = self.folderName + "/vectors/clip_" + layer.name()
                     
                     # check file isn't openned and is writable
                     version = 0
                     while self.isFileOpened(output):
                         output = self.folderName + "/vectors/clip_" + \
-                            layer.name() + "("+ str(version) + ").shp"
+                            layer.name() + "("+ str(version) + ")"
                         version +=1
 
                     result = processing.run("native:clip", {"INPUT" : layer.id(), "OVERLAY" : selection.id(), "OUTPUT" : "memory:"})
 
-                    # save the layer with the same encoding, crs and format as the original loaded
-                    #newName = ""
-                    # QgsVectorFileWriter.writeAsVectorFormat(result["OUTPUT"], output, layer.dataProvider().encoding(), layer.crs(), layer.dataProvider().storageType(), newFilename=newName)
-                    # use above when i know how to detect the exact name created, newFilename do no return nothing
-                    QgsVectorFileWriter.writeAsVectorFormat(result["OUTPUT"], output, layer.dataProvider().encoding(), layer.crs(), "ESRI Shapefile")
+                    options = QgsVectorFileWriter.SaveVectorOptions()
+                    options.fileEncoding = layer.dataProvider().encoding()
+                    options.driverName = format_selected.driverName
+                    options.fileEncoding = "UTF-8"
+
+                    error, error_msg, filename, _ = QgsVectorFileWriter.writeAsVectorFormatV3(
+                        layer = result["OUTPUT"],
+                        fileName = output,
+                        transformContext = QgsProject.instance().transformContext(),
+                        options = options,
+                    )
+
+                    if error != QgsVectorFileWriter.NoError:
+                        iface.messageBar().pushMessage(
+                            self.tr("Error"),
+                            self.tr(f"Cannot write file {output}"),
+                            level=Qgis.Critical)
+                        raise RuntimeError(error_msg)
 
                     # save style
                     if self.dlg.checkStyle.isChecked():
-                        qml_output = os.path.splitext(output)[0] + ".qml"
+                        qml_output = os.path.splitext(filename)[0] + ".qml"
                         layer.saveNamedStyle(qml_output)
                         
                     # load layer
                     if self.dlg.checkBox.isChecked():
-                        out = iface.addVectorLayer(output, "", "ogr")
+                        out = iface.addVectorLayer(filename, "", "ogr")
                         if not out:
                             iface.messageBar().pushMessage(self.tr("Error"),
-                                self.tr("Could not load ") +  output,
+                                self.tr("Could not load ") + output,
                                 level=Qgis.Warning)
                 
                 # clip raster layer (if displayed and checked)
