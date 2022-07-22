@@ -221,6 +221,18 @@ class ClipMultipleLayers:
             except OSError as e:
                 return True
 
+    def checkSingleGeomType(self, layer):
+        """
+        Check if the layer has at least one multi or only single geometry.
+        """
+        features = layer.getFeatures()
+        for f in features:
+            isSingle = QgsWkbTypes.isSingleType(f.geometry().wkbType())
+            if isSingle is False:
+                return False
+
+        return True
+
     def run(self):
         """Run method that performs all the real work"""
         self.dlg.comboBox.clear()
@@ -292,6 +304,9 @@ class ClipMultipleLayers:
             progression = 0
 
             #clip part
+            multi_support_error = []
+            multi_support_error_processing = []
+            format_no_multi = ["ESRI Shapefile", "DXF"]
             for layer in checkedLayers  :
                 out = None
                 # clip vector layer (if displayed and checked)
@@ -301,12 +316,26 @@ class ClipMultipleLayers:
                     
                     # check file isn't openned and is writable
                     version = 0
-                    while self.isFileOpened(output):
+                    # QgsMessageLog.logMessage(output + "." + format_selected.globs[0].split(".")[-1], level=Qgis.Critical)
+                    while self.isFileOpened(output + "." + format_selected.globs[0].split(".")[-1]):
                         output = self.folderName + "/vectors/clip_" + \
                             layer.name() + "("+ str(version) + ")"
                         version +=1
 
+                    # if a multipoint show error and skip to next iter
+                    # QgsMessageLog.logMessage(str((not self.checkSingleGeomType(layer)) and ( format_selected.driverName in format_no_multi )), level=Qgis.Critical)
+                    if not self.checkSingleGeomType(layer) and ( format_selected.driverName in format_no_multi ):
+                        multi_support_error.append(layer)
+                        # skip to next iter
+                        continue
+
                     result = processing.run("native:clip", {"INPUT" : layer.id(), "OVERLAY" : selection.id(), "OUTPUT" : "memory:"})
+
+                    # check if processing generate a multi type, this is a know bug of qgis 3.22
+                    if not self.checkSingleGeomType(result["OUTPUT"]) and ( format_selected.driverName in format_no_multi ):
+                        multi_support_error_processing.append(layer)
+                        # skip to next iter
+                        continue
 
                     options = QgsVectorFileWriter.SaveVectorOptions()
                     options.fileEncoding = layer.dataProvider().encoding()
@@ -368,3 +397,35 @@ class ClipMultipleLayers:
                 progression += 1
 
             iface.messageBar().clearWidgets()
+
+            if len(multi_support_error) != 0:
+                def showError():
+                    text = f"{' & '.join(format_no_multi)} do not support multitype geometry. Please change output format or convert to singletype geometry.\n {[l.name() for l in multi_support_error]}"
+                    QMessageBox.warning(
+                        None,
+                        self.tr("Multi Type format error"),
+                        self.tr(text),
+                    )
+
+                widget = iface.messageBar().createMessage("Skipped Layers", "Somes layers were not processed")
+                button = QPushButton(widget)
+                button.setText("More")
+                button.pressed.connect(showError)
+                widget.layout().addWidget(button)
+                iface.messageBar().pushWidget(widget, Qgis.Warning)
+
+            if len(multi_support_error_processing) != 0:
+                def showErrorProcessing():
+                    text = f"{' & '.join(format_no_multi)} do not support multitype geometry. Qgis changed the format while processing it... \n It is a know bug of 3.0 : https://gis.stackexchange.com/q/434380\n Please change output format.\n {[l.name() for l in multi_support_error_processing]}"
+                    QMessageBox.warning(
+                        None,
+                        self.tr("Multi Type format error"),
+                        self.tr(text),
+                    )
+
+                widget = iface.messageBar().createMessage("Skipped Layers", "Somes layers were not processed")
+                button = QPushButton(widget)
+                button.setText("More")
+                button.pressed.connect(showErrorProcessing)
+                widget.layout().addWidget(button)
+                iface.messageBar().pushWidget(widget, Qgis.Warning)
