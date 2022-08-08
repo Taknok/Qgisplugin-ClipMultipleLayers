@@ -32,6 +32,8 @@ from .clip_multiple_layers_dialog import ClipMultipleLayersDialog
 import os.path
 import errno
 
+import tempfile
+
 import processing, os, subprocess, time
 from qgis.utils import *
 from qgis.core import *
@@ -39,7 +41,9 @@ from qgis.gui import QgsMessageBar
 # from qgis.PyQt.QtGui import QProgressBar
 from qgis.PyQt.QtCore import *
 
-from processing.algs.gdal.GdalUtils import GdalUtils
+from osgeo import gdal
+
+FORMAT_NO_MULTI = ["ESRI Shapefile", "DXF"]
 
 class ClipMultipleLayers:
     """QGIS Plugin Implementation."""
@@ -80,9 +84,15 @@ class ClipMultipleLayers:
         self.toolbar = self.iface.addToolBar(u'ClipMultipleLayers')
         self.toolbar.setObjectName(u'ClipMultipleLayers')
 
-        self.dlg.lineEdit.clear()
+        self.dlg.lineEditOutputFolder.clear()
         self.initFolder();
-        self.dlg.pushButton.clicked.connect(self.selectOutputFile);
+        self.dlg.pushButtonOutputFolder.clicked.connect(self.selectOutputFile);
+
+        self.format_no_multi = FORMAT_NO_MULTI
+        self.multi_support_error = []
+        self.multi_support_error_processing = []
+        self.progression = 0
+
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -201,7 +211,7 @@ class ClipMultipleLayers:
 
         self.folderName = path_project
 
-        self.dlg.lineEdit.setText(self.folderName);
+        self.dlg.lineEditOutputFolder.setText(self.folderName);
 
     def selectOutputFile(self):
         folderTmp = QFileDialog.getExistingDirectory(self.dlg,
@@ -210,7 +220,7 @@ class ClipMultipleLayers:
         if folderTmp != "":
             self.folderName = folderTmp
 
-        self.dlg.lineEdit.setText(self.folderName);
+        self.dlg.lineEditOutputFolder.setText(self.folderName);
 
     def isFileOpened(self, file_path):
         if os.path.exists(file_path):
@@ -233,21 +243,186 @@ class ClipMultipleLayers:
 
         return True
 
-    def run(self):
-        """Run method that performs all the real work"""
-        self.dlg.comboBox.clear()
+    def _clipVector(self, layer, mask):
+        output = os.path.join(self.folderName, "vectors", "clip_" + layer.name())
+
+        index = self.dlg.comboBoxVectorFormat.currentIndex()
+        vector_format_selected = self.dlg.comboBoxVectorFormat.itemData(index)
+
+        # check file isn't openned and is writable
+        version = 0
+        # QgsMessageLog.logMessage(output + "." + vector_format_selected.globs[0].split(".")[-1], level=Qgis.Critical)
+        while self.isFileOpened(output + "." + vector_format_selected.globs[0].split(".")[-1]):
+            output = self.folderName + "/vectors/clip_" + \
+                layer.name() + "("+ str(version) + ")"
+            version +=1
+
+        # if a multipoint show error and skip to next iter
+        # QgsMessageLog.logMessage(str((not self.checkSingleGeomType(layer)) and ( formvector_format_selectedat_selected.driverName in format_no_multi )), level=Qgis.Critical)
+        if not self.checkSingleGeomType(layer) and ( vector_format_selected.driverName in self.format_no_multi ):
+            self.multi_support_error.append(layer)
+            # skip to next iter
+            return
+
+        result = processing.run("native:clip", {"INPUT" : layer.id(), "OVERLAY" : mask.id(), "OUTPUT" : "memory:"})
+
+        # check if processing generate a multi type, this is a know bug of qgis 3.22
+        if not self.checkSingleGeomType(result["OUTPUT"]) and ( vector_format_selected.driverName in self.format_no_multi ):
+            self.multi_support_error_processing.append(layer)
+            # skip to next iter
+            return
+
+        options = QgsVectorFileWriter.SaveVectorOptions()
+        options.fileEncoding = layer.dataProvider().encoding()
+        options.driverName = vector_format_selected.driverName
+        options.fileEncoding = "UTF-8"
+
+        error, error_msg, filename, _ = QgsVectorFileWriter.writeAsVectorFormatV3(
+            layer = result["OUTPUT"],
+            fileName = output,
+            transformContext = QgsProject.instance().transformContext(),
+            options = options,
+        )
+
+        if error != QgsVectorFileWriter.NoError:
+            iface.messageBar().pushMessage(
+                self.tr("Error"),
+                self.tr(f"Cannot write file {output}"),
+                level=Qgis.Critical)
+            raise RuntimeError(error_msg)
+
+        # save style
+        if self.dlg.checkBoxSaveStyle.isChecked():
+            qml_output = os.path.splitext(filename)[0] + ".qml"
+            layer.saveNamedStyle(qml_output)
+            
+        # load layer
+        if self.dlg.checkBoxLoadClippedLayers.isChecked():
+            out = iface.addVectorLayer(filename, "", "ogr")
+            if not out:
+                iface.messageBar().pushMessage(self.tr("Error"),
+                    self.tr("Could not load ") + output,
+                    level=Qgis.Warning)
+
+    def _convert2gdal(self, layer, mask):
+        provider = layer.dataProvider()
+        coordinateTransformContext = QgsProject.instance().transformContext()
+        tr = QgsCoordinateTransform(mask.crs(), layer.crs(), QgsProject.instance())
+
+        pipe = QgsRasterPipe()
+        projector = QgsRasterProjector()
+        projector.setCrs(provider.crs(), provider.crs(), coordinateTransformContext)
+
+        if not pipe.set(provider.clone()):
+            iface.messageBar().pushMessage(self.tr("Error"), self.tr("Cannot set pipe provider: ") + layer.name(), level=Qgis.Warning)
+
+
+        if not pipe.insert(2, projector):
+            iface.messageBar().pushMessage(self.tr("Error"), self.tr("Cannot set pipe projector: ") + layer.name(), level=Qgis.Warning)
+
+        out_dir = tempfile.TemporaryDirectory()
+        out_file = os.path.join(out_dir.name, "clipraster.tmp")
+        file_writer = QgsRasterFileWriter(out_file)
+        file_writer.Mode(0)
+
+        extent = tr.transform(mask.extent())
+
+        # QgsMessageLog.logMessage(">>>>>> . " + out_dir.name, level=Qgis.Critical)
+
+
+        opts = ["COMPRESS=LZW"]
+        file_writer.setCreateOptions(opts)
+        error = file_writer.writeRaster(
+            pipe,
+            extent.width(),
+            extent.height(),
+            extent,
+            layer.crs(),
+            coordinateTransformContext,
+        )
+
+
+        if error == QgsRasterFileWriter.NoError:
+            return QgsRasterLayer(out_file, layer.name()), out_dir
+        else:
+            iface.messageBar().pushMessage(self.tr("Error"), self.tr("Could save tmp raster: ") + layer.name(), level=Qgis.Warning)
+            return None, None
+
+    def _get_raster_extension(self, layer):
+        dataset = gdal.Open(layer.dataProvider().dataSourceUri(), gdal.GA_ReadOnly)
+        driverName = dataset.GetDriver().ShortName
+        return QgsRasterFileWriter.extensionsForFormat(driverName)[0]
+
+    def _clipRaster(self, layer, mask):
+        tmpdir = None
+        # Processing support only gdal provider, if not gdal, extract data to a gdal layer
+        if layer.providerType() != "gdal":
+            layer, tmpdir = self._convert2gdal(layer, mask)
+
+        if layer is None:
+            return
+
+        # get extension about the raster
+        filename = layer.name()
+        file_extension = self._get_raster_extension(layer)
+
+
+        output = os.path.join(self.folderName, "rasters", "clip_" + filename + "." + file_extension)
+        
+        # check file isn't openned and is writable
+        version = 0
+        while self.isFileOpened(output):
+            output = os.path.join(self.folderName, "rasters", "clip_" + filename+ "("+ str(version) + ")." + file_extension)
+            version +=1
+
+        processing.run("gdal:cliprasterbymasklayer", {"INPUT" : layer, "MASK" : mask, "CROP_TO_CUTLINE" : True,  "OUTPUT" : output})
+
+        # QgsMessageLog.logMessage(">>>>>> # " + str(tmpdir.name), level=Qgis.Critical)
+
+        if tmpdir is not None:
+            # remove reference to tmp file before erasing tmp folder
+            del layer
+            tmpdir.cleanup()
+
+        # load layer
+        if self.dlg.checkBoxLoadClippedLayers.isChecked():
+            out = iface.addRasterLayer(output, "")
+            if out is None or not out.isValid():
+                iface.messageBar().pushMessage(self.tr("Error"), self.tr("Could not load ") +  output, level=Qgis.Warning)
+
+    def _showPopupError(self, error_arr):
+        text = f"{' & '.join(error_arr)} do not support multitype geometry. Please change output format or convert to singletype geometry.\n {[l.name() for l in multi_support_error]}"
+        QMessageBox.warning(
+            None,
+            self.tr("Multi Type format error"),
+            self.tr(text),
+        )
+
+    def _showBarError(self, error_arr):
+        widget = iface.messageBar().createMessage("Skipped Layers", "Somes layers were not processed")
+        button = QPushButton(widget)
+        button.setText("More")
+        button.pressed.connect(self._showPopupError(error_arr))
+        widget.layout().addWidget(button)
+        iface.messageBar().pushWidget(widget, Qgis.Warning)
+
+    def showFilledMainWindow(self):
+        # clear selection box
+        self.dlg.comboBoxMaskLayer.clear()
+
+        # get all layers to fill comboBoxMaskLayer
         layers = QgsProject.instance().mapLayers().values()
         # fill selection combo, only polygon layers
         n = 0
         for layer in layers:
             if layer.type() == QgsMapLayer.VectorLayer and \
-                layer.geometryType() == QgsWkbTypes.PolygonGeometry:
-                self.dlg.comboBox.addItem( layer.name(), layer )
+               layer.geometryType() == QgsWkbTypes.PolygonGeometry:
+                self.dlg.comboBoxMaskLayer.addItem(layer.name(), layer)
                 n += 1
 
-        # fill selection format combo
+        # fill output format in comboBoxVectorFormat
         for vector_format in QgsVectorFileWriter.supportedFiltersAndFormats():
-            self.dlg.comboFormatBox.addItem(vector_format.driverName, vector_format)
+            self.dlg.comboBoxVectorFormat.addItem(vector_format.driverName, vector_format)
 
         if n == 0:  # no polygon layer
             iface.messageBar().pushMessage(self.tr("Warning"),
@@ -259,10 +434,41 @@ class ClipMultipleLayers:
         self.dlg.show()
         
         # Run the dialog event loop
-        result = self.dlg.exec_()
+        return self.dlg.exec_()
+
+    def createOutputFolders(self):
+        #search existence of output folder, if not create it
+        if not os.path.isdir(self.folderName):
+            raise FileNotFoundError(
+                errno.ENOENT, os.strerror(errno.ENOENT), self.folderName)
+
+        directory = os.path.join(self.folderName, "vectors")
+        if not os.path.exists(directory) and self.dlg.checkVector.isChecked():
+            os.makedirs(directory)
+            
+        directory = os.path.join(self.folderName, "rasters")
+        if not os.path.exists(directory) and self.dlg.checkRaster.isChecked():
+            os.makedirs(directory)
+
+    def createProgressBar(self, checkedLayers):
+        # Progress bar
+        progressMessageBar = iface.messageBar().createMessage(self.tr("Clipping..."))
+        self.progress = QProgressBar()
+        self.progress.setMaximum(len(checkedLayers) - 1)
+        self.progress.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
+        progressMessageBar.layout().addWidget(self.progress)
+        iface.messageBar().pushWidget(progressMessageBar, Qgis.Info)
+        self.progression = 0
+
+    def run(self):
+        """Run method that performs all the real work"""
+
+        # Run the dialog event loop
+        result = self.showFilledMainWindow()
+
         # See if OK was pressed
         if result:
-            dirName = self.dlg.lineEdit.text().strip()
+            dirName = self.dlg.lineEditOutputFolder.text().strip()
             if len(dirName) == 0:
                 iface.messageBar().pushMessage(self.tr("Warning"),
                     self.tr("Please select target folder"), level=Qgis.Warning)
@@ -274,158 +480,38 @@ class ClipMultipleLayers:
                     level=Qgis.Warning)
                 return
 
-            index = self.dlg.comboBox.currentIndex()
-            selection = self.dlg.comboBox.itemData(index)
-            index = self.dlg.comboFormatBox.currentIndex()
-            format_selected = self.dlg.comboFormatBox.itemData(index)
-            
-            checkedLayers = QgsProject.instance().layerTreeRoot().checkedLayers()
-            
-            #search existence of output folder, if not create it
-            if not os.path.isdir(self.folderName):
-                raise FileNotFoundError(
-                    errno.ENOENT, os.strerror(errno.ENOENT), self.folderName)
+            index = self.dlg.comboBoxMaskLayer.currentIndex()
+            selection = self.dlg.comboBoxMaskLayer.itemData(index)
 
-            directory = self.folderName + "/vectors"
-            if not os.path.exists(directory) and self.dlg.checkVector.isChecked():
-                os.makedirs(directory)
-                
-            directory = self.folderName + "/rasters"
-            if not os.path.exists(directory) and self.dlg.checkRaster.isChecked():
-                os.makedirs(directory)
-            
-            # Progress bar
-            progressMessageBar = iface.messageBar().createMessage(self.tr("Clipping..."))
-            progress = QProgressBar()
-            progress.setMaximum(len(checkedLayers) - 1)
-            progress.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
-            progressMessageBar.layout().addWidget(progress)
-            iface.messageBar().pushWidget(progressMessageBar, Qgis.Info)
-            progression = 0
+            checkedLayers = QgsProject.instance().layerTreeRoot().checkedLayers()
+
+            self.createOutputFolders()
+
+            self.createProgressBar(checkedLayers)
 
             #clip part
-            multi_support_error = []
-            multi_support_error_processing = []
-            format_no_multi = ["ESRI Shapefile", "DXF"]
             for layer in checkedLayers  :
                 out = None
                 # clip vector layer (if displayed and checked)
                 if layer.type() == QgsMapLayer.VectorLayer and \
                    layer != selection and self.dlg.checkVector.isChecked():
-                    output = self.folderName + "/vectors/clip_" + layer.name()
-                    
-                    # check file isn't openned and is writable
-                    version = 0
-                    # QgsMessageLog.logMessage(output + "." + format_selected.globs[0].split(".")[-1], level=Qgis.Critical)
-                    while self.isFileOpened(output + "." + format_selected.globs[0].split(".")[-1]):
-                        output = self.folderName + "/vectors/clip_" + \
-                            layer.name() + "("+ str(version) + ")"
-                        version +=1
+                    self._clipVector(layer, selection)
 
-                    # if a multipoint show error and skip to next iter
-                    # QgsMessageLog.logMessage(str((not self.checkSingleGeomType(layer)) and ( format_selected.driverName in format_no_multi )), level=Qgis.Critical)
-                    if not self.checkSingleGeomType(layer) and ( format_selected.driverName in format_no_multi ):
-                        multi_support_error.append(layer)
-                        # skip to next iter
-                        continue
-
-                    result = processing.run("native:clip", {"INPUT" : layer.id(), "OVERLAY" : selection.id(), "OUTPUT" : "memory:"})
-
-                    # check if processing generate a multi type, this is a know bug of qgis 3.22
-                    if not self.checkSingleGeomType(result["OUTPUT"]) and ( format_selected.driverName in format_no_multi ):
-                        multi_support_error_processing.append(layer)
-                        # skip to next iter
-                        continue
-
-                    options = QgsVectorFileWriter.SaveVectorOptions()
-                    options.fileEncoding = layer.dataProvider().encoding()
-                    options.driverName = format_selected.driverName
-                    options.fileEncoding = "UTF-8"
-
-                    error, error_msg, filename, _ = QgsVectorFileWriter.writeAsVectorFormatV3(
-                        layer = result["OUTPUT"],
-                        fileName = output,
-                        transformContext = QgsProject.instance().transformContext(),
-                        options = options,
-                    )
-
-                    if error != QgsVectorFileWriter.NoError:
-                        iface.messageBar().pushMessage(
-                            self.tr("Error"),
-                            self.tr(f"Cannot write file {output}"),
-                            level=Qgis.Critical)
-                        raise RuntimeError(error_msg)
-
-                    # save style
-                    if self.dlg.checkStyle.isChecked():
-                        qml_output = os.path.splitext(filename)[0] + ".qml"
-                        layer.saveNamedStyle(qml_output)
-                        
-                    # load layer
-                    if self.dlg.checkBox.isChecked():
-                        out = iface.addVectorLayer(filename, "", "ogr")
-                        if not out:
-                            iface.messageBar().pushMessage(self.tr("Error"),
-                                self.tr("Could not load ") + output,
-                                level=Qgis.Warning)
-                
                 # clip raster layer (if displayed and checked)
                 if layer.type() == QgsMapLayer.RasterLayer and \
                    self.dlg.checkRaster.isChecked():
-                    # get extension about the raster
-                    filename, file_extension = os.path.splitext(layer.source())
+                    self._clipRaster(layer, selection)
 
-                    output = self.folderName + "/rasters/clip_" + layer.name() + file_extension
-                    
-                    # check file isn't openned and is writable
-                    version = 0
-                    while self.isFileOpened(output):
-                        output = self.folderName + "/rasters/clip_" + layer.name() + "("+ str(version) + ")" + file_extension
-                        version +=1
-
-                    processing.run("gdal:cliprasterbymasklayer", {"INPUT" : layer.id(), "MASK" : selection.id(), "CROP_TO_CUTLINE" : True,  "OUTPUT" : output})
-                    
-                    # load layer
-                    if self.dlg.checkBox.isChecked():
-                        out = iface.addRasterLayer(output, "")
-                        if not out.isValid():
-                            iface.messageBar().pushMessage(self.tr("Error"), self.tr("Could not load ") +  output, level=Qgis.Warning)
-                
                 # Update progression
                 time.sleep(1)
-                progress.setValue(progression + 1)
-                progression += 1
+                self.progression += 1
+                self.progress.setValue(self.progression)
 
             iface.messageBar().clearWidgets()
 
-            if len(multi_support_error) != 0:
-                def showError():
-                    text = f"{' & '.join(format_no_multi)} do not support multitype geometry. Please change output format or convert to singletype geometry.\n {[l.name() for l in multi_support_error]}"
-                    QMessageBox.warning(
-                        None,
-                        self.tr("Multi Type format error"),
-                        self.tr(text),
-                    )
+            # Display errors
+            if len(self.multi_support_error) != 0:
+                self._showBarError(self.multi_support_error)
 
-                widget = iface.messageBar().createMessage("Skipped Layers", "Somes layers were not processed")
-                button = QPushButton(widget)
-                button.setText("More")
-                button.pressed.connect(showError)
-                widget.layout().addWidget(button)
-                iface.messageBar().pushWidget(widget, Qgis.Warning)
-
-            if len(multi_support_error_processing) != 0:
-                def showErrorProcessing():
-                    text = f"{' & '.join(format_no_multi)} do not support multitype geometry. Qgis changed the format while processing it... \n It is a know bug of 3.0 : https://gis.stackexchange.com/q/434380\n Please change output format.\n {[l.name() for l in multi_support_error_processing]}"
-                    QMessageBox.warning(
-                        None,
-                        self.tr("Multi Type format error"),
-                        self.tr(text),
-                    )
-
-                widget = iface.messageBar().createMessage("Skipped Layers", "Somes layers were not processed")
-                button = QPushButton(widget)
-                button.setText("More")
-                button.pressed.connect(showErrorProcessing)
-                widget.layout().addWidget(button)
-                iface.messageBar().pushWidget(widget, Qgis.Warning)
+            if len(self.multi_support_error_processing) != 0:
+                self._showBarError(self.multi_support_error_processing)
