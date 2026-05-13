@@ -14,7 +14,7 @@ __copyright__ = 'Copyright 2018, Pg'
 
 import unittest
 
-from PyQt5.QtGui import QDialogButtonBox, QDialog
+from qgis.PyQt.QtWidgets import QDialogButtonBox, QDialog
 
 from clip_multiple_layers_dialog import ClipMultipleLayersDialog
 

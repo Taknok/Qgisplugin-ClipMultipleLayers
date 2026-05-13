@@ -21,9 +21,9 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt5.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QAction, QFileDialog, QMessageBox, QProgressBar
+from qgis.PyQt.QtCore import Qt, QSettings, QTranslator, qVersion, QCoreApplication
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QProgressBar, QPushButton
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -38,9 +38,6 @@ import processing, os, subprocess, time
 from qgis.utils import *
 from qgis.core import *
 from qgis.gui import QgsMessageBar
-# from qgis.PyQt.QtGui import QProgressBar
-from qgis.PyQt.QtCore import *
-
 from osgeo import gdal
 
 FORMAT_NO_MULTI = ["ESRI Shapefile", "DXF"]
@@ -207,11 +204,9 @@ class ClipMultipleLayers:
 
     def initFolder(self):
         path_project = QgsProject.instance().fileName()
-        path_project = path_project[:path_project.rfind("/"):]
+        self.folderName = os.path.dirname(path_project)
 
-        self.folderName = path_project
-
-        self.dlg.lineEditOutputFolder.setText(self.folderName);
+        self.dlg.lineEditOutputFolder.setText(self.folderName)
 
     def selectOutputFile(self):
         folderTmp = QFileDialog.getExistingDirectory(self.dlg,
@@ -285,7 +280,7 @@ class ClipMultipleLayers:
         )
 
         if error != QgsVectorFileWriter.NoError:
-            iface.messageBar().pushMessage(
+            self.iface.messageBar().pushMessage(
                 self.tr("Error"),
                 self.tr(f"Cannot write file {output}"),
                 level=Qgis.Critical)
@@ -298,9 +293,9 @@ class ClipMultipleLayers:
             
         # load layer
         if self.dlg.checkBoxLoadClippedLayers.isChecked():
-            out = iface.addVectorLayer(filename, "", "ogr")
+            out = self.iface.addVectorLayer(filename, "", "ogr")
             if not out:
-                iface.messageBar().pushMessage(self.tr("Error"),
+                self.iface.messageBar().pushMessage(self.tr("Error"),
                     self.tr("Could not load ") + output,
                     level=Qgis.Warning)
 
@@ -314,11 +309,11 @@ class ClipMultipleLayers:
         projector.setCrs(provider.crs(), provider.crs(), coordinateTransformContext)
 
         if not pipe.set(provider.clone()):
-            iface.messageBar().pushMessage(self.tr("Error"), self.tr("Cannot set pipe provider: ") + layer.name(), level=Qgis.Warning)
+            self.iface.messageBar().pushMessage(self.tr("Error"), self.tr("Cannot set pipe provider: ") + layer.name(), level=Qgis.Warning)
 
 
         if not pipe.insert(2, projector):
-            iface.messageBar().pushMessage(self.tr("Error"), self.tr("Cannot set pipe projector: ") + layer.name(), level=Qgis.Warning)
+            self.iface.messageBar().pushMessage(self.tr("Error"), self.tr("Cannot set pipe projector: ") + layer.name(), level=Qgis.Warning)
 
         out_dir = tempfile.TemporaryDirectory()
         out_file = os.path.join(out_dir.name, "clipraster.tmp")
@@ -345,7 +340,7 @@ class ClipMultipleLayers:
         if error == QgsRasterFileWriter.NoError:
             return QgsRasterLayer(out_file, layer.name()), out_dir
         else:
-            iface.messageBar().pushMessage(self.tr("Error"), self.tr("Could save tmp raster: ") + layer.name(), level=Qgis.Warning)
+            self.iface.messageBar().pushMessage(self.tr("Error"), self.tr("Could save tmp raster: ") + layer.name(), level=Qgis.Warning)
             return None, None
 
     def _get_raster_extension(self, layer):
@@ -386,12 +381,12 @@ class ClipMultipleLayers:
 
         # load layer
         if self.dlg.checkBoxLoadClippedLayers.isChecked():
-            out = iface.addRasterLayer(output, "")
+            out = self.iface.addRasterLayer(output, "")
             if out is None or not out.isValid():
-                iface.messageBar().pushMessage(self.tr("Error"), self.tr("Could not load ") +  output, level=Qgis.Warning)
+                self.iface.messageBar().pushMessage(self.tr("Error"), self.tr("Could not load ") + output, level=Qgis.Warning)
 
     def _showPopupError(self, error_arr):
-        text = f"{' & '.join(error_arr)} do not support multitype geometry. Please change output format or convert to singletype geometry.\n {[l.name() for l in multi_support_error]}"
+        text = f"{' & '.join(error_arr)} do not support multitype geometry. Please change output format or convert to singletype geometry.\n {[l.name() for l in self.multi_support_error]}"
         QMessageBox.warning(
             None,
             self.tr("Multi Type format error"),
@@ -399,12 +394,12 @@ class ClipMultipleLayers:
         )
 
     def _showBarError(self, error_arr):
-        widget = iface.messageBar().createMessage("Skipped Layers", "Somes layers were not processed")
+        widget = self.iface.messageBar().createMessage("Skipped Layers", "Somes layers were not processed")
         button = QPushButton(widget)
         button.setText("More")
-        button.pressed.connect(self._showPopupError(error_arr))
+        button.pressed.connect(lambda: self._showPopupError(error_arr))
         widget.layout().addWidget(button)
-        iface.messageBar().pushWidget(widget, Qgis.Warning)
+        self.iface.messageBar().pushWidget(widget, Qgis.Warning)
 
     def showFilledMainWindow(self):
         # clear selection box
@@ -425,7 +420,7 @@ class ClipMultipleLayers:
             self.dlg.comboBoxVectorFormat.addItem(vector_format.driverName, vector_format)
 
         if n == 0:  # no polygon layer
-            iface.messageBar().pushMessage(self.tr("Warning"),
+            self.iface.messageBar().pushMessage(self.tr("Warning"),
                 self.tr("No polygon layer in actual project"),
                 level=Qgis.Warning)
             return
@@ -434,7 +429,7 @@ class ClipMultipleLayers:
         self.dlg.show()
         
         # Run the dialog event loop
-        return self.dlg.exec_()
+        return self.dlg.exec()
 
     def createOutputFolders(self):
         #search existence of output folder, if not create it
@@ -452,12 +447,13 @@ class ClipMultipleLayers:
 
     def createProgressBar(self, checkedLayers):
         # Progress bar
-        progressMessageBar = iface.messageBar().createMessage(self.tr("Clipping..."))
+        progressMessageBar = self.iface.messageBar().createMessage(self.tr("Clipping..."))
         self.progress = QProgressBar()
         self.progress.setMaximum(len(checkedLayers) - 1)
-        self.progress.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
+        alignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        self.progress.setAlignment(alignment)
         progressMessageBar.layout().addWidget(self.progress)
-        iface.messageBar().pushWidget(progressMessageBar, Qgis.Info)
+        self.iface.messageBar().pushWidget(progressMessageBar, Qgis.Info)
         self.progression = 0
 
     def run(self):
@@ -470,12 +466,12 @@ class ClipMultipleLayers:
         if result:
             dirName = self.dlg.lineEditOutputFolder.text().strip()
             if len(dirName) == 0:
-                iface.messageBar().pushMessage(self.tr("Warning"),
+                self.iface.messageBar().pushMessage(self.tr("Warning"),
                     self.tr("Please select target folder"), level=Qgis.Warning)
                 return
             if not (self.dlg.checkVector.isChecked() or
                     self.dlg.checkRaster.isChecked()):
-                iface.messageBar().pushMessage(self.tr("Warning"),
+                self.iface.messageBar().pushMessage(self.tr("Warning"),
                     self.tr("Neither vector nor raster layers selected for clipping. Nothing to do. "),
                     level=Qgis.Warning)
                 return
@@ -507,7 +503,7 @@ class ClipMultipleLayers:
                 self.progression += 1
                 self.progress.setValue(self.progression)
 
-            iface.messageBar().clearWidgets()
+            self.iface.messageBar().clearWidgets()
 
             # Display errors
             if len(self.multi_support_error) != 0:

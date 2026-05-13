@@ -7,7 +7,7 @@ Clip all displayed vectors and rasters layers with a shape selected and loads ne
 You can report a issue [here](https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues/new) and check the current [issues](https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues).
 
 ## Developers :
-Compile `ressources.py` with OSGeo4W Shell and the command : `pyrcc5 -o resources.py resources.qrc`. Translation are welcome :)
+Compile `resources.py` with OSGeo4W Shell and the command : `pyrcc6 -o resources.py resources.qrc`. Translation are welcome :)
 
 Edit `clip_multiple_layers_dialog_base.ui` with QT designer (in Qt Creator).
 
