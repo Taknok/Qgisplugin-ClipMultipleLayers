@@ -111,14 +111,23 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, Ui_ClipMultipleLayers):
         selected_layers = []
         for row in range(self.tableWidgetLayerSelection.rowCount()):
             checkbox_item = self.tableWidgetLayerSelection.item(row, 0)
-            if checkbox_item is None or checkbox_item.checkState() != QtCore.Qt.Checked:
+            if checkbox_item is None or checkbox_item.checkState() != Qt.CheckState.Checked:
                 continue
 
             layer_item = self.tableWidgetLayerSelection.item(row, 1)
             if layer_item is None:
                 continue
 
-            layer = QgsProject.instance().mapLayer(layer_item.data(Qt.UserRole))
+            layer_id = layer_item.data(Qt.ItemDataRole.UserRole)
+            if layer_id is None:
+                continue
+            # Ensure we pass a native string id to mapLayer
+            try:
+                layer_id = str(layer_id)
+            except Exception:
+                continue
+
+            layer = QgsProject.instance().mapLayer(layer_id)
             if layer is None:
                 continue
 
