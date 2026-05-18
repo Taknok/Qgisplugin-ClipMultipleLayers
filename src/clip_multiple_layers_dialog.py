@@ -69,6 +69,15 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, Ui_ClipMultipleLayers):
                 "Warning", "No polygon layer in current project", level=Qgis.Warning
             )
 
+    def showEvent(self, event):
+        """Refresh dynamic parts of the dialog each time it's shown."""
+        # Update the layer selection to reflect current project layers
+        try:
+            self._populate_layer_selection()
+        except Exception:
+            pass
+        super(ClipMultipleLayersDialog, self).showEvent(event)
+
     def _populate_layer_selection(self):
         """Populate the layer selection table with project layers."""
         self.tableWidgetLayerSelection.clearContents()
