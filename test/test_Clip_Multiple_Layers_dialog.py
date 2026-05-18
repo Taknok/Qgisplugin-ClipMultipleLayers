@@ -16,7 +16,7 @@ import unittest
 
 from qgis.PyQt.QtWidgets import QDialogButtonBox, QDialog
 
-from clip_multiple_layers_dialog import ClipMultipleLayersDialog
+from src.clip_multiple_layers_dialog import ClipMultipleLayersDialog
 
 from utilities import get_qgis_app
 QGIS_APP = get_qgis_app()

@@ -32,5 +32,5 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :type iface: QgsInterface
     """
     #
-    from .clip_multiple_layers import ClipMultipleLayers
+    from .src.plugin import ClipMultipleLayers
     return ClipMultipleLayers(iface)

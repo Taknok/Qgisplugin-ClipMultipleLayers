@@ -38,15 +38,25 @@ LOCALES = hu
 # translation
 SOURCES = \
 	__init__.py \
-	clip_multiple_layers.py clip_multiple_layers_dialog.py
+	src/__init__.py \
+	src/plugin.py \
+	src/clip_multiple_layers_dialog.py \
+	src/clipper.py \
+	src/constants.py \
+	src/utils.py
 
 PLUGINNAME = clip_multiple_layers
 
 PY_FILES = \
 	__init__.py \
-	clip_multiple_layers.py clip_multiple_layers_dialog.py
+	src/__init__.py \
+	src/plugin.py \
+	src/clip_multiple_layers_dialog.py \
+	src/clipper.py \
+	src/constants.py \
+	src/utils.py
 
-UI_FILES = clip_multiple_layers_dialog_base.ui
+UI_FILES = src/ui/clip_multiple_layers_dialog_base.ui
 
 EXTRAS = metadata.txt icon.png
 
