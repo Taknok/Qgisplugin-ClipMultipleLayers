@@ -114,6 +114,14 @@ class ClipMultipleLayers:
         # Initialize clipper
         clipper = LayerClipper(self.iface, folder_name, self.dlg)
 
+        # Exclude the mask layer from the selected layers to avoid clipping it
+        try:
+            mask_id = mask_layer.id()
+            selected_layers = [layer for layer in selected_layers if layer.id() != mask_id]
+        except Exception:
+            # If anything goes wrong obtaining ids, fall back to original list
+            pass
+
         # Process each layer
         for layer in selected_layers:
             if isinstance(layer, QgsVectorLayer):
