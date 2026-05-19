@@ -3,6 +3,7 @@
 Clipping logic for the Clip Multiple Layers plugin.
 """
 
+from datetime import datetime
 import os
 import tempfile
 from osgeo import gdal
@@ -31,9 +32,12 @@ class LayerClipper:
 
     def clip_vector(self, layer, mask):
         """Clip a vector layer with the given mask."""
-        base_output = os.path.join(self.folder_name, "vectors", f"clip_{layer.name()}")
         index = self.dlg.comboBoxVectorFormat.currentIndex()
         vector_format = self.dlg.comboBoxVectorFormat.itemData(index)
+
+        base_output = os.path.join(self.folder_name, "vectors", f"clip_{layer.name()}")
+        extension = vector_format.globs[0].lstrip("*")
+        base_output = get_unique_output_path(base_output, extension)
 
         # Check for multi-geometry issues
         if not check_single_geom_type(layer) and vector_format.driverName in FORMAT_NO_MULTI:

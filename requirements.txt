@@ -1,0 +1,3 @@
+pb_tool
+PyQt6
+pyside6

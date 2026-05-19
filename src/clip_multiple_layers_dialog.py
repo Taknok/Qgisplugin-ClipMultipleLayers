@@ -11,8 +11,12 @@ from qgis.core import Qgis, QgsProject, QgsMapLayer, QgsWkbTypes, QgsVectorFileW
 
 from .clip_multiple_layers_dialog_ui import Ui_ClipMultipleLayers
 
+from qgis.PyQt import uic
 
-class ClipMultipleLayersDialog(QtWidgets.QDialog, Ui_ClipMultipleLayers):
+FORM_CLASS, _ = uic.loadUiType(os.path.join(
+    os.path.dirname(__file__), 'ui', 'clip_multiple_layers_dialog_base.ui'))
+
+class ClipMultipleLayersDialog(QtWidgets.QDialog, FORM_CLASS):
     """Dialog for selecting clipping parameters."""
 
     def __init__(self, parent=None):
@@ -44,6 +48,15 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, Ui_ClipMultipleLayers):
             self.folder_name = folder_tmp
             self.lineEditOutputFolder.setText(self.folder_name)
 
+    def showEvent(self, event):
+        """Refresh dynamic parts of the dialog each time it's shown."""
+        # Update the layer selection to reflect current project layers
+        try:
+            self._populate_layer_selection()
+        except Exception:
+            pass
+        super(ClipMultipleLayersDialog, self).showEvent(event)
+
     def populate_dialog(self):
         """Populate the dialog with available layers and formats."""
         self._populate_layer_selection()
@@ -69,23 +82,24 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, Ui_ClipMultipleLayers):
                 "Warning", "No polygon layer in current project", level=Qgis.Warning
             )
 
-    def showEvent(self, event):
-        """Refresh dynamic parts of the dialog each time it's shown."""
-        # Update the layer selection to reflect current project layers
-        try:
-            self._populate_layer_selection()
-        except Exception:
-            pass
-        super(ClipMultipleLayersDialog, self).showEvent(event)
-
     def _populate_layer_selection(self):
         """Populate the layer selection table with project layers."""
         self.tableWidgetLayerSelection.clearContents()
         self.tableWidgetLayerSelection.setRowCount(0)
         self.tableWidgetLayerSelection.setColumnCount(2)
         self.tableWidgetLayerSelection.setHorizontalHeaderLabels(["", "Layer"])
-        self.tableWidgetLayerSelection.horizontalHeader().setStretchLastSection(True)
         self.tableWidgetLayerSelection.verticalHeader().setVisible(False)
+        
+        # Set checkbox column to fixed narrow width
+        self.tableWidgetLayerSelection.setColumnWidth(0, 30)
+        
+        # Make the Layer column stretch to fill available space
+        try:
+            resize_mode = QtWidgets.QHeaderView.ResizeMode.Stretch
+        except AttributeError:
+            resize_mode = QtWidgets.QHeaderView.Stretch
+        self.tableWidgetLayerSelection.horizontalHeader().setSectionResizeMode(1, resize_mode)
+        
         try:
             selection_behavior = QtWidgets.QAbstractItemView.SelectRows
         except AttributeError:
@@ -112,8 +126,6 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, Ui_ClipMultipleLayers):
             layer_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
             layer_item.setData(Qt.ItemDataRole.UserRole, layer.id())
             self.tableWidgetLayerSelection.setItem(row, 1, layer_item)
-
-        self.tableWidgetLayerSelection.resizeColumnsToContents()
 
     def get_selected_layers(self):
         """Get the selected layers to clip from the layer selection table."""

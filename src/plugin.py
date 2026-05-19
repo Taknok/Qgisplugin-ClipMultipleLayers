@@ -6,8 +6,8 @@ Main plugin class for Clip Multiple Layers.
 import os
 import tempfile
 from qgis.core import Qgis, QgsProject, QgsVectorLayer, QgsRasterLayer
-from qgis.PyQt.QtCore import QSettings, Qt
-from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox
+from qgis.PyQt.QtCore import QCoreApplication, QLocale, QSettings, QTranslator, Qt
+from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QProgressBar
 from qgis.PyQt.QtGui import QIcon
 
 from .clip_multiple_layers_dialog import ClipMultipleLayersDialog
@@ -20,11 +20,14 @@ class ClipMultipleLayers:
     def __init__(self, iface):
         self.iface = iface
         self.plugin_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+        self.translator = None
+        self._load_translation()
         self.actions = []
         self.menu = self.tr("&Clip Multiple Layers")
         self.toolbar = self.iface.addToolBar("ClipMultipleLayers")
         self.toolbar.setObjectName("ClipMultipleLayers")
         self.dlg = None
+        self.progression = 0
 
     def tr(self, message):
         """Get the translation for a string using Qt translation API."""
@@ -68,7 +71,32 @@ class ClipMultipleLayers:
         for action in self.actions:
             self.iface.removePluginMenu(self.tr("&Clip Multiple Layers"), action)
             self.iface.removeToolBarIcon(action)
+        if self.translator is not None:
+            QCoreApplication.removeTranslator(self.translator)
+            self.translator = None
         del self.toolbar
+
+    def _load_translation(self):
+        """Load plugin translation for the current QGIS locale."""
+        locale = QSettings().value("locale/userLocale", QLocale.system().name())[0:2]
+        translation_file = f"{locale}.qm"
+        translation_path = os.path.join(self.plugin_dir, "i18n", translation_file)
+        
+        if os.path.exists(translation_path):
+            self.translator = QTranslator()
+            self.translator.load(translation_path)
+            QCoreApplication.installTranslator(self.translator)
+
+    def createProgressBar(self, total):
+        # Progress bar
+        self.progressMessageBar = self.iface.messageBar().createMessage(self.tr("Clipping..."))
+        self.progress = QProgressBar()
+        self.progress.setMaximum(len(total) - 1)
+        alignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        self.progress.setAlignment(alignment)
+        self.progressMessageBar.layout().addWidget(self.progress)
+        self.iface.messageBar().pushWidget(self.progressMessageBar, Qgis.Info)
+        self.progression = 0
 
     def run(self):
         """Run method that performs all the real work."""
@@ -122,6 +150,8 @@ class ClipMultipleLayers:
             # If anything goes wrong obtaining ids, fall back to original list
             pass
 
+        self.createProgressBar(selected_layers)
+
         # Process each layer
         for layer in selected_layers:
             if isinstance(layer, QgsVectorLayer):
@@ -140,12 +170,17 @@ class ClipMultipleLayers:
                         "Error", f"Failed to clip raster layer {layer.name()}: {str(e)}",
                         level=Qgis.Critical
                     )
+            self.progression += 1
+            self.progress.setValue(self.progression)
 
         # Show error messages if any
         if clipper.multi_support_error:
             clipper.show_error_bar(clipper.multi_support_error)
         if clipper.multi_support_error_processing:
             clipper.show_error_bar(clipper.multi_support_error_processing)
+
+        # Clean progress bar
+        self.iface.messageBar().popWidget(self.progressMessageBar)
 
         # Show success message
         self.iface.messageBar().pushMessage(
