@@ -9,8 +9,6 @@ from qgis.PyQt import QtCore, QtWidgets
 from qgis.PyQt.QtCore import Qt
 from qgis.core import Qgis, QgsProject, QgsMapLayer, QgsWkbTypes, QgsVectorFileWriter
 
-from .clip_multiple_layers_dialog_ui import Ui_ClipMultipleLayers
-
 from qgis.PyQt import uic
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(

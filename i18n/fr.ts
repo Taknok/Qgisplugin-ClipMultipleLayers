@@ -6,12 +6,12 @@
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Clip Multiple Layers</source>
-        <translation>Découper plusieurs couches</translation>
+        <translation>Clip Multiple Layers</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Clip multiple layers using a mask</source>
-        <translation>Découper plusieurs couches à l’aide d’un masque</translation>
+        <translation>Découper plusieurs couches à l'aide d'un masque</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />

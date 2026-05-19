@@ -9,7 +9,6 @@ do
     echo "Processing: ${LOCALE}.ts"
     # Note we don't use pylupdate with qt .pro file approach as it is flakey
     # about what is made available.
-    pylupdate6 src/*.py -ts i18n/${LOCALE}.ts
     pyside6-lrelease i18n/${LOCALE}.ts -qm i18n/${LOCALE}.qm
 done
 

@@ -11,82 +11,82 @@
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Clip multiple layers using a mask</source>
-        <translation>Több réteg kivágása egy maszkréteg segítségével</translation>
+        <translation>Ritaglia più layer utilizzando una maschera</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Input</source>
-        <translation>Bemenet</translation>
+        <translation>Input</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Mask layer:</source>
-        <translation>Maszkréteg:</translation>
+        <translation>Layer di maschera:</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Layers to clip:</source>
-        <translation>Kivágandó rétegek:</translation>
+        <translation>Layer da ritagliare:</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Layer</source>
-        <translation>Réteg</translation>
+        <translation>Layer</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Output</source>
-        <translation>Kimenet</translation>
+        <translation>Output</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Output folder:</source>
-        <translation>Kimeneti mappa:</translation>
+        <translation>Cartella di output:</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Browse…</source>
-        <translation>Tallózás…</translation>
+        <translation>Sfoglia…</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Vector format:</source>
-        <translation>Vektoros formátum:</translation>
+        <translation>Formato vettoriale:</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Options</source>
-        <translation>Beállítások</translation>
+        <translation>Opzioni</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Vector layers</source>
-        <translation>Vektoros rétegek</translation>
+        <translation>Layer vettoriali</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Raster layers</source>
-        <translation>Raszteres rétegek</translation>
+        <translation>Layer raster</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Load results after processing</source>
-        <translation>Eredmények betöltése a feldolgozás után</translation>
+        <translation>Carica i risultati dopo l'elaborazione</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Save vector styles (.qml)</source>
-        <translation>Vektoros stílusok mentése (.qml)</translation>
+        <translation>Salva gli stili vettoriali (.qml)</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>⚠️ Clipping large rasters may temporarily freeze QGIS.</source>
-        <translation>⚠️ Nagy raszterek kivágása átmenetileg lefagyaszthatja a QGIS-t.</translation>
+        <translation>⚠️ Il ritaglio di raster di grandi dimensioni può bloccare temporaneamente QGIS.</translation>
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>&lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues"&gt;Signal issues&lt;/a&gt;. &lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/wiki"&gt;Tutorial&lt;/a&gt;. Support me on &lt;a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=4DC3A78C398HW"&gt;Paypal&lt;/a&gt;.</source>
-        <translation>&lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues"&gt;Hibák jelzése&lt;/a&gt;. &lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/wiki"&gt;Útmutató&lt;/a&gt;. Támogass a &lt;a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=4DC3A78C398HW"&gt;PayPal-on&lt;/a&gt;.</translation>
+        <translation>&lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues"&gt;Segnala problemi&lt;/a&gt;. &lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/wiki"&gt;Tutorial&lt;/a&gt;. Supportami su &lt;a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=4DC3A78C398HW"&gt;PayPal&lt;/a&gt;.</translation>
     </message>
 </context>
 </TS>
