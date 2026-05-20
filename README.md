@@ -4,7 +4,10 @@
 # Plugin for QGIS: Clip Multiple Layers
 
 ## Description
-This plugin allows you to clip all visible vector and raster layers using a selected mask layer. The resulting layers can then be loaded into the project.
+<p align="center">
+<img height="400em" alt="dialog3" src="https://github.com/user-attachments/assets/0e90da45-996c-458c-8363-5525669d34e7" />
+</p>
+This plugin allows you to clip multiple vector and raster layers using a selected mask layer. The resulting layers can then be loaded into the project.
 
 ---
 
