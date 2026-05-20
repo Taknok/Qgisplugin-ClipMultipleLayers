@@ -14,7 +14,9 @@ This plugin allows you to clip multiple vector and raster layers using a selecte
 ## Issues
 You can report a new issue [here](https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues/new) and view existing ones [here](https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues).
 
----
+
+## Translators
+Duplicate a `.ts` file for the new language and create a new PR.
 
 ## Developers
 
