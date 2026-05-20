@@ -48,7 +48,7 @@ then
     echo "i18n/"${LOCALE}".ts"
     # Note we don't use pylupdate with qt .pro file approach as it is flakey
     # about what is made available.
-    pylupdate5 -noobsolete ${PYTHON_FILES} -ts i18n/${LOCALE}.ts
+    pylupdate6 -noobsolete ${PYTHON_FILES} -ts i18n/${LOCALE}.ts
   done
 else
   echo "No need to edit any translation files (.ts) because no python files"
