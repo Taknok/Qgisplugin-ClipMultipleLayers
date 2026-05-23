@@ -4,11 +4,13 @@ Main plugin class for Clip Multiple Layers.
 """
 
 import os
-import tempfile
-from qgis.core import Qgis, QgsProject, QgsVectorLayer, QgsRasterLayer
-from qgis.PyQt.QtCore import QCoreApplication, QLocale, QSettings, QTranslator, Qt
-from qgis.PyQt.QtWidgets import QAction, QFileDialog, QMessageBox, QProgressBar
+
+from qgis.core import Qgis, QgsRasterLayer, QgsVectorLayer
+from qgis.PyQt.QtCore import (
+    QCoreApplication, QLocale, QSettings, Qt, QTranslator
+)
 from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QProgressBar
 
 from .clip_multiple_layers_dialog import ClipMultipleLayersDialog
 from .clipper import LayerClipper
@@ -19,7 +21,9 @@ class ClipMultipleLayers:
 
     def __init__(self, iface):
         self.iface = iface
-        self.plugin_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+        self.plugin_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), os.pardir)
+        )
         self.translator = None
         self._load_translation()
         self.actions = []
@@ -33,8 +37,18 @@ class ClipMultipleLayers:
         """Get the translation for a string using Qt translation API."""
         return message  # Placeholder for translation
 
-    def add_action(self, icon_path, text, callback, enabled_flag=True, add_to_menu=True,
-                   add_to_toolbar=True, status_tip=None, whats_this=None, parent=None):
+    def add_action(
+        self,
+        icon_path,
+        text,
+        callback,
+        enabled_flag=True,
+        add_to_menu=True,
+        add_to_toolbar=True,
+        status_tip=None,
+        whats_this=None,
+        parent=None,
+    ):
         """Add a toolbar icon to the toolbar."""
         icon = QIcon(icon_path)
         action = QAction(icon, text, parent)
@@ -69,7 +83,10 @@ class ClipMultipleLayers:
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
-            self.iface.removePluginMenu(self.tr("&Clip Multiple Layers"), action)
+            self.iface.removePluginMenu(
+                self.tr("&Clip Multiple Layers"),
+                action
+            )
             self.iface.removeToolBarIcon(action)
         if self.translator is not None:
             QCoreApplication.removeTranslator(self.translator)
@@ -78,10 +95,17 @@ class ClipMultipleLayers:
 
     def _load_translation(self):
         """Load plugin translation for the current QGIS locale."""
-        locale = QSettings().value("locale/userLocale", QLocale.system().name())[0:2]
+        locale = QSettings().value(
+            "locale/userLocale",
+            QLocale.system().name()
+        )[0:2]
         translation_file = f"{locale}.qm"
-        translation_path = os.path.join(self.plugin_dir, "i18n", translation_file)
-        
+        translation_path = os.path.join(
+            self.plugin_dir,
+            "i18n",
+            translation_file
+        )
+
         if os.path.exists(translation_path):
             self.translator = QTranslator()
             self.translator.load(translation_path)
@@ -89,7 +113,9 @@ class ClipMultipleLayers:
 
     def createProgressBar(self, total):
         # Progress bar
-        self.progressMessageBar = self.iface.messageBar().createMessage(self.tr("Clipping..."))
+        self.progressMessageBar = self.iface.messageBar().createMessage(
+            self.tr("Clipping...")
+        )
         self.progress = QProgressBar()
         self.progress.setMaximum(len(total) - 1)
         alignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
@@ -118,19 +144,29 @@ class ClipMultipleLayers:
         # Get selected layers
         selected_layers = self.dlg.get_selected_layers()
         if not selected_layers:
-            QMessageBox.warning(None, "No layers selected", "Please select at least one layer to clip.")
+            QMessageBox.warning(
+                None,
+                "No layers selected",
+                "Please select at least one layer to clip."
+            )
             return
 
         # Get mask layer
         mask_layer = self.dlg.get_mask_layer()
         if not mask_layer:
-            QMessageBox.warning(None, "No mask selected", "Please select a mask layer.")
+            QMessageBox.warning(
+                None,
+                "No mask selected",
+                "Please select a mask layer."
+            )
             return
 
         # Get output folder
         folder_name = self.dlg.get_output_folder()
         if not folder_name:
-            QMessageBox.warning(None, "No output folder", "Please select an output folder.")
+            QMessageBox.warning(
+                None, "No output folder", "Please select an output folder."
+            )
             return
 
         # Create output directories
@@ -145,7 +181,9 @@ class ClipMultipleLayers:
         # Exclude the mask layer from the selected layers to avoid clipping it
         try:
             mask_id = mask_layer.id()
-            selected_layers = [layer for layer in selected_layers if layer.id() != mask_id]
+            selected_layers = [
+                layer for layer in selected_layers if layer.id() != mask_id
+            ]
         except Exception:
             # If anything goes wrong obtaining ids, fall back to original list
             pass
@@ -159,16 +197,18 @@ class ClipMultipleLayers:
                     clipper.clip_vector(layer, mask_layer)
                 except Exception as e:
                     self.iface.messageBar().pushMessage(
-                        "Error", f"Failed to clip vector layer {layer.name()}: {str(e)}",
-                        level=Qgis.Critical
+                        "Error",
+                        f"Failed to clip vector layer {layer.name()}:{str(e)}",
+                        level=Qgis.Critical,
                     )
             elif isinstance(layer, QgsRasterLayer):
                 try:
                     clipper.clip_raster(layer, mask_layer)
                 except Exception as e:
                     self.iface.messageBar().pushMessage(
-                        "Error", f"Failed to clip raster layer {layer.name()}: {str(e)}",
-                        level=Qgis.Critical
+                        "Error",
+                        f"Failed to clip raster layer {layer.name()}:{str(e)}",
+                        level=Qgis.Critical,
                     )
             self.progression += 1
             self.progress.setValue(self.progression)
@@ -184,6 +224,7 @@ class ClipMultipleLayers:
 
         # Show success message
         self.iface.messageBar().pushMessage(
-            "Success", f"Clipping completed. Output saved to {folder_name}",
-            level=Qgis.Success
+            "Success",
+            f"Clipping completed. Output saved to {folder_name}",
+            level=Qgis.Success,
         )

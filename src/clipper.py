@@ -3,16 +3,20 @@
 Clipping logic for the Clip Multiple Layers plugin.
 """
 
-from datetime import datetime
 import os
 import tempfile
+
 from osgeo import gdal
 from qgis import processing
-
 from qgis.core import (
-    Qgis, QgsVectorFileWriter, QgsRasterPipe, QgsRasterProjector,
-    QgsCoordinateTransform, QgsRasterFileWriter, QgsRasterLayer,
-    QgsProject
+    Qgis,
+    QgsCoordinateTransform,
+    QgsProject,
+    QgsRasterFileWriter,
+    QgsRasterLayer,
+    QgsRasterPipe,
+    QgsRasterProjector,
+    QgsVectorFileWriter,
 )
 from qgis.PyQt.QtWidgets import QMessageBox
 
@@ -35,23 +39,32 @@ class LayerClipper:
         index = self.dlg.comboBoxVectorFormat.currentIndex()
         vector_format = self.dlg.comboBoxVectorFormat.itemData(index)
 
-        base_output = os.path.join(self.folder_name, "vectors", f"clip_{layer.name()}")
+        base_output = os.path.join(
+            self.folder_name,
+            "vectors",
+            f"clip_{layer.name()}"
+        )
         extension = vector_format.globs[0].lstrip("*")
         base_output = get_unique_output_path(base_output, extension)
 
         # Check for multi-geometry issues
-        if not check_single_geom_type(layer) and vector_format.driverName in FORMAT_NO_MULTI:
+        if (
+            not check_single_geom_type(layer)
+            and vector_format.driverName in FORMAT_NO_MULTI
+        ):
             self.multi_support_error.append(layer)
             return
 
-        result = processing.run("native:clip", {
-            "INPUT": layer.id(),
-            "OVERLAY": mask.id(),
-            "OUTPUT": "memory:"
-        })
+        result = processing.run(
+            "native:clip",
+            {"INPUT": layer.id(), "OVERLAY": mask.id(), "OUTPUT": "memory:"},
+        )
 
         # Check processing result for multi-geometry
-        if not check_single_geom_type(result["OUTPUT"]) and vector_format.driverName in FORMAT_NO_MULTI:
+        if (
+            not check_single_geom_type(result["OUTPUT"])
+            and vector_format.driverName in FORMAT_NO_MULTI
+        ):
             self.multi_support_error_processing.append(layer)
             return
 
@@ -60,7 +73,9 @@ class LayerClipper:
         options.driverName = vector_format.driverName
         options.fileEncoding = "UTF-8"
 
-        error, error_msg, filename, _ = QgsVectorFileWriter.writeAsVectorFormatV3(
+        write = QgsRasterFileWriter.writeAsVectorFormatV3
+
+        error, error_msg, filename, _ = write(
             layer=result["OUTPUT"],
             fileName=base_output,
             transformContext=QgsProject.instance().transformContext(),
@@ -69,7 +84,9 @@ class LayerClipper:
 
         if error != QgsVectorFileWriter.NoError:
             self.iface.messageBar().pushMessage(
-                "Error", f"Cannot write file {base_output}", level=Qgis.Critical
+                "Error",
+                f"Cannot write file {base_output}",
+                level=Qgis.Critical
             )
             raise RuntimeError(error_msg)
 
@@ -90,7 +107,11 @@ class LayerClipper:
         """Convert non-GDAL layer to GDAL format for processing."""
         provider = layer.dataProvider()
         coord_transform_ctx = QgsProject.instance().transformContext()
-        tr = QgsCoordinateTransform(mask.crs(), layer.crs(), QgsProject.instance())
+        tr = QgsCoordinateTransform(
+            mask.crs(),
+            layer.crs(),
+            QgsProject.instance()
+        )
 
         pipe = QgsRasterPipe()
         projector = QgsRasterProjector()
@@ -98,13 +119,17 @@ class LayerClipper:
 
         if not pipe.set(provider.clone()):
             self.iface.messageBar().pushMessage(
-                "Error", f"Cannot set pipe provider: {layer.name()}", level=Qgis.Warning
+                "Error",
+                f"Cannot set pipe provider: {layer.name()}",
+                level=Qgis.Warning
             )
             return None, None
 
         if not pipe.insert(2, projector):
             self.iface.messageBar().pushMessage(
-                "Error", f"Cannot set pipe projector: {layer.name()}", level=Qgis.Warning
+                "Error",
+                f"Cannot set pipe projector: {layer.name()}",
+                level=Qgis.Warning,
             )
             return None, None
 
@@ -118,21 +143,30 @@ class LayerClipper:
         file_writer.setCreateOptions(opts)
 
         error = file_writer.writeRaster(
-            pipe, extent.width(), extent.height(), extent,
-            layer.crs(), coord_transform_ctx
+            pipe,
+            extent.width(),
+            extent.height(),
+            extent,
+            layer.crs(),
+            coord_transform_ctx,
         )
 
         if error == QgsRasterFileWriter.NoError:
             return QgsRasterLayer(out_file, layer.name()), out_dir
         else:
             self.iface.messageBar().pushMessage(
-                "Error", f"Could not save temp raster: {layer.name()}", level=Qgis.Warning
+                "Error",
+                f"Could not save temp raster: {layer.name()}",
+                level=Qgis.Warning,
             )
             return None, None
 
     def _get_raster_extension(self, layer):
         """Get the appropriate extension for the raster layer."""
-        dataset = gdal.Open(layer.dataProvider().dataSourceUri(), gdal.GA_ReadOnly)
+        dataset = gdal.Open(
+            layer.dataProvider().dataSourceUri(),
+            gdal.GA_ReadOnly
+        )
         driver_name = dataset.GetDriver().ShortName
         return QgsRasterFileWriter.extensionsForFormat(driver_name)[0]
 
@@ -146,15 +180,22 @@ class LayerClipper:
 
         filename = layer.name()
         file_extension = self._get_raster_extension(layer)
-        base_output = os.path.join(self.folder_name, "rasters", f"clip_{filename}")
+        base_output = os.path.join(
+            self.folder_name,
+            "rasters",
+            f"clip_{filename}"
+        )
         output = get_unique_output_path(base_output, f".{file_extension}")
 
-        processing.run("gdal:cliprasterbymasklayer", {
-            "INPUT": layer,
-            "MASK": mask,
-            "CROP_TO_CUTLINE": True,
-            "OUTPUT": output
-        })
+        processing.run(
+            "gdal:cliprasterbymasklayer",
+            {
+                "INPUT": layer,
+                "MASK": mask,
+                "CROP_TO_CUTLINE": True,
+                "OUTPUT": output
+            },
+        )
 
         if tmp_dir is not None:
             del layer
@@ -169,15 +210,20 @@ class LayerClipper:
 
     def show_error_popup(self, error_arr):
         """Show a popup with error details."""
-        text = f"{' & '.join(error_arr)} do not support multitype geometry. " \
-               f"Please change output format or convert to singletype geometry.\n" \
-               f"{[l.name() for l in self.multi_support_error]}"
+        text = (
+            f"{' & '.join(error_arr)} do not support multitype geometry. "
+            f"Please change output format or convert to singletype geometry.\n"
+            f"{[layer.name() for layer in self.multi_support_error]}"
+        )
         QMessageBox.warning(None, "Multi Type format error", text)
 
     def show_error_bar(self, error_arr):
         """Show an error message in the message bar."""
         from qgis.PyQt.QtWidgets import QPushButton
-        widget = self.iface.messageBar().createMessage("Skipped Layers", "Some layers were not processed")
+
+        widget = self.iface.messageBar().createMessage(
+            "Skipped Layers", "Some layers were not processed"
+        )
         button = QPushButton(widget)
         button.setText("More")
         button.clicked.connect(lambda: self.show_error_popup(error_arr))

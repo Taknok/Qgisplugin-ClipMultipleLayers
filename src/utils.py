@@ -4,6 +4,7 @@ Utility functions for the Clip Multiple Layers plugin.
 """
 
 import os
+
 from qgis.core import QgsWkbTypes
 
 

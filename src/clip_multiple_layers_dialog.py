@@ -5,14 +5,20 @@ Dialog for the Clip Multiple Layers plugin.
 
 import os
 
-from qgis.PyQt import QtCore, QtWidgets
+from qgis.core import (
+    Qgis, QgsMapLayer, QgsProject, QgsVectorFileWriter, QgsWkbTypes
+)
+from qgis.PyQt import QtWidgets, uic
 from qgis.PyQt.QtCore import Qt
-from qgis.core import Qgis, QgsProject, QgsMapLayer, QgsWkbTypes, QgsVectorFileWriter
 
-from qgis.PyQt import uic
+FORM_CLASS, _ = uic.loadUiType(
+    os.path.join(
+        os.path.dirname(__file__),
+        "ui",
+        "clip_multiple_layers_dialog_base.ui"
+    )
+)
 
-FORM_CLASS, _ = uic.loadUiType(os.path.join(
-    os.path.dirname(__file__), 'ui', 'clip_multiple_layers_dialog_base.ui'))
 
 class ClipMultipleLayersDialog(QtWidgets.QDialog, FORM_CLASS):
     """Dialog for selecting clipping parameters."""
@@ -39,6 +45,7 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, FORM_CLASS):
     def select_output_folder(self):
         """Open a dialog to select the output folder."""
         from qgis.PyQt.QtWidgets import QFileDialog
+
         folder_tmp = QFileDialog.getExistingDirectory(
             self, "Select output folder", self.folder_name
         )
@@ -65,19 +72,27 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, FORM_CLASS):
 
         polygon_count = 0
         for layer in layers:
-            if (layer.type() == QgsMapLayer.VectorLayer and
-                layer.geometryType() == QgsWkbTypes.PolygonGeometry):
+            if (
+                layer.type() == QgsMapLayer.VectorLayer
+                and layer.geometryType() == QgsWkbTypes.PolygonGeometry
+            ):
                 self.comboBoxMaskLayer.addItem(layer.name(), layer)
                 polygon_count += 1
 
         # Populate vector format combo box
         for vector_format in QgsVectorFileWriter.supportedFiltersAndFormats():
-            self.comboBoxVectorFormat.addItem(vector_format.driverName, vector_format)
+            self.comboBoxVectorFormat.addItem(
+                vector_format.driverName,
+                vector_format
+            )
 
         if polygon_count == 0:
             from qgis.utils import iface
+
             iface.messageBar().pushMessage(
-                "Warning", "No polygon layer in current project", level=Qgis.Warning
+                "Warning",
+                "No polygon layer in current project",
+                level=Qgis.Warning
             )
 
     def _populate_layer_selection(self):
@@ -87,21 +102,25 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, FORM_CLASS):
         self.tableWidgetLayerSelection.setColumnCount(2)
         self.tableWidgetLayerSelection.setHorizontalHeaderLabels(["", "Layer"])
         self.tableWidgetLayerSelection.verticalHeader().setVisible(False)
-        
+
         # Set checkbox column to fixed narrow width
         self.tableWidgetLayerSelection.setColumnWidth(0, 30)
-        
+
         # Make the Layer column stretch to fill available space
         try:
             resize_mode = QtWidgets.QHeaderView.ResizeMode.Stretch
         except AttributeError:
             resize_mode = QtWidgets.QHeaderView.Stretch
-        self.tableWidgetLayerSelection.horizontalHeader().setSectionResizeMode(1, resize_mode)
-        
+        self.tableWidgetLayerSelection.horizontalHeader().setSectionResizeMode(
+            1, resize_mode
+        )
+
         try:
             selection_behavior = QtWidgets.QAbstractItemView.SelectRows
         except AttributeError:
-            selection_behavior = QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows
+            selection_behavior = (
+                QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows
+            )
         self.tableWidgetLayerSelection.setSelectionBehavior(selection_behavior)
 
         layers = QgsProject.instance().mapLayers().values()
@@ -110,18 +129,26 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, FORM_CLASS):
             self.tableWidgetLayerSelection.insertRow(row)
 
             visible = False
-            layer_tree_layer = QgsProject.instance().layerTreeRoot().findLayer(layer.id())
+            layer_tree_layer = (
+                QgsProject.instance().layerTreeRoot().findLayer(layer.id())
+            )
             if layer_tree_layer is not None:
                 visible = layer_tree_layer.isVisible()
 
             checkbox_item = QtWidgets.QTableWidgetItem()
-            checkbox_item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled)
-            checkbox_item.setCheckState(Qt.CheckState.Checked if visible else Qt.CheckState.Unchecked)
+            checkbox_item.setFlags(
+                Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled
+            )
+            checkbox_item.setCheckState(
+                Qt.CheckState.Checked if visible else Qt.CheckState.Unchecked
+            )
             checkbox_item.setText("")
             self.tableWidgetLayerSelection.setItem(row, 0, checkbox_item)
 
             layer_item = QtWidgets.QTableWidgetItem(layer.name())
-            layer_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+            layer_item.setFlags(
+                Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
+            )
             layer_item.setData(Qt.ItemDataRole.UserRole, layer.id())
             self.tableWidgetLayerSelection.setItem(row, 1, layer_item)
 
@@ -130,7 +157,10 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, FORM_CLASS):
         selected_layers = []
         for row in range(self.tableWidgetLayerSelection.rowCount()):
             checkbox_item = self.tableWidgetLayerSelection.item(row, 0)
-            if checkbox_item is None or checkbox_item.checkState() != Qt.CheckState.Checked:
+            if (
+                checkbox_item is None
+                or checkbox_item.checkState() != Qt.CheckState.Checked
+            ):
                 continue
 
             layer_item = self.tableWidgetLayerSelection.item(row, 1)
@@ -150,9 +180,13 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, FORM_CLASS):
             if layer is None:
                 continue
 
-            if layer.type() == QgsMapLayer.VectorLayer and self.checkVector.isChecked():
+            if layer.type() == QgsMapLayer.VectorLayer and \
+                    self.checkVector.isChecked():
                 selected_layers.append(layer)
-            elif layer.type() == QgsMapLayer.RasterLayer and self.checkRaster.isChecked():
+            elif (
+                layer.type() == QgsMapLayer.RasterLayer and
+                    self.checkRaster.isChecked()
+            ):
                 selected_layers.append(layer)
 
         return selected_layers
