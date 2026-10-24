@@ -73,7 +73,7 @@ class LayerClipper:
         options.driverName = vector_format.driverName
         options.fileEncoding = "UTF-8"
 
-        write = QgsRasterFileWriter.writeAsVectorFormatV3
+        write = QgsVectorFileWriter.writeAsVectorFormatV3
 
         error, error_msg, filename, _ = write(
             layer=result["OUTPUT"],
