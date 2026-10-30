@@ -55,6 +55,11 @@
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
+        <source>Store all clipped layers in one GeoPackage</source>
+        <translation>Az összes kivágott réteg mentése egy GeoPackage-fájlba</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Vector format:</source>
         <translation>Vektoros formátum:</translation>
     </message>

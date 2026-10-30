@@ -9,6 +9,8 @@
 </p>
 This plugin allows you to clip multiple vector and raster layers using a selected mask layer. The resulting layers can then be loaded into the project.
 Optionally, create an output subfolder named after the selected mask layer.
+You can also store all clipped vector and raster layers in one
+`clipped_layers.gpkg` file, each as a separate GeoPackage table.
 
 ---
 

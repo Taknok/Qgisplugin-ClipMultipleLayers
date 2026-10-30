@@ -33,6 +33,9 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, FORM_CLASS):
         # Initialize folder
         self.init_folder()
         self.pushButtonOutputFolder.clicked.connect(self.select_output_folder)
+        self.checkBoxSingleGeoPackage.toggled.connect(
+            self.comboBoxVectorFormat.setDisabled
+        )
 
         # Populate dialog
         self.populate_dialog()

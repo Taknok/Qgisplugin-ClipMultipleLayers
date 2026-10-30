@@ -55,6 +55,11 @@
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
+        <source>Store all clipped layers in one GeoPackage</source>
+        <translation>Salva tutti i layer ritagliati in un unico GeoPackage</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Vector format:</source>
         <translation>Formato vettoriale:</translation>
     </message>
