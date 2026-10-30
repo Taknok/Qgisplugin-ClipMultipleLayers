@@ -30,6 +30,29 @@ pip install -r requirements.txt
 sudo apt install qt6-tools-dev-tools   # Linux
 ```
 
+### Development container
+
+Open the repository from a WSL distribution with WSLg enabled, then choose
+**Dev Containers: Reopen in Container** in VS Code. The container installs
+QGIS, Python dependencies from `requirements.txt`, and Qt 6 tools. WSLg is used
+to display the QGIS desktop application. Start QGIS from the container
+terminal using `bash scripts/run-qgis.sh`. This launcher isolates QGIS from
+the project's Python virtual environment, whose Qt bindings can conflict with
+the system Qt used by QGIS.
+
+Run these commands from the repository root inside the container:
+
+```bash
+# 1. Extract UI strings into every translation file
+bash scripts/update-ui-translations.sh
+
+# 2. Compile all translations
+bash scripts/compile-translation.sh
+
+# 3. Compile the Qt resources
+bash scripts/compile-resources.sh
+```
+
 ### 1. Load the plugin dynamically in QGIS
 Windows:
 ```cmd
@@ -43,18 +66,18 @@ ln -s ~/.local/share/QGIS/QGIS4/profiles/default/python/plugins/ClipMultipleLaye
 
 ### 2. Extract translatable strings from UI files
 ```bash
-pylupdate6 src/ui/*.ui -ts i18n/${LOCALE}.ts
+bash scripts/update-strings.sh
 ```
 
 ### 3. Compile translations
 ```bash
-./scripts/compile-translation.sh
+bash scripts/compile-translation.sh
 ```
 
 ### 4. Compile resources
-For icon. 
+For icon.
 ```bash
-pyrcc6 -o resources.py resources.qrc
+bash scripts/compile-resources.sh
 ```
 
 ### 5. UI editing

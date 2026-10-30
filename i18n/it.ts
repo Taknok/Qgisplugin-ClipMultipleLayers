@@ -50,6 +50,11 @@
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
+        <source>Create a subfolder named after the mask layer</source>
+        <translation>Crea una sottocartella denominata in base al layer di maschera</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Vector format:</source>
         <translation>Formato vettoriale:</translation>
     </message>
@@ -85,8 +90,7 @@
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
-        <source>&lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues"&gt;Signal issues&lt;/a&gt;. &lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/wiki"&gt;Tutorial&lt;/a&gt;. Support me on &lt;a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=4DC3A78C398HW"&gt;Paypal&lt;/a&gt;.</source>
+        <source>&lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues"&gt;Report issues&lt;/a&gt;. &lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/wiki"&gt;Tutorial&lt;/a&gt;. Support me on &lt;a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=4DC3A78C398HW"&gt;Paypal&lt;/a&gt;.</source>
         <translation>&lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues"&gt;Segnala problemi&lt;/a&gt;. &lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/wiki"&gt;Tutorial&lt;/a&gt;. Supportami su &lt;a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=4DC3A78C398HW"&gt;PayPal&lt;/a&gt;.</translation>
     </message>
-</context>
-</TS>
+</context></TS>
