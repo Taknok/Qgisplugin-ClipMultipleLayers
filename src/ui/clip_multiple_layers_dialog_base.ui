@@ -114,6 +114,13 @@
        </layout>
       </item>
       <item>
+       <widget class="QCheckBox" name="checkBoxUseMaskLayerName">
+        <property name="text">
+         <string>Create a subfolder named after the mask layer</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <layout class="QHBoxLayout">
         <item>
          <widget class="QLabel" name="labelVectorFormat">

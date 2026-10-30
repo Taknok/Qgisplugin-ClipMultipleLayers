@@ -6,7 +6,8 @@ Dialog for the Clip Multiple Layers plugin.
 import os
 
 from qgis.core import (
-    Qgis, QgsMapLayer, QgsProject, QgsVectorFileWriter, QgsWkbTypes
+    Qgis, QgsFileUtils, QgsMapLayer, QgsProject, QgsVectorFileWriter,
+    QgsWkbTypes
 )
 from qgis.PyQt import QtWidgets, uic
 from qgis.PyQt.QtCore import Qt
@@ -200,4 +201,12 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def get_output_folder(self):
         """Get the output folder path."""
-        return self.lineEditOutputFolder.text().strip()
+        folder = self.lineEditOutputFolder.text().strip()
+        if self.checkBoxUseMaskLayerName.isChecked():
+            mask_layer = self.get_mask_layer()
+            if mask_layer is not None:
+                folder = os.path.join(
+                    folder,
+                    QgsFileUtils.stringToSafeFilename(mask_layer.name())
+                )
+        return folder
