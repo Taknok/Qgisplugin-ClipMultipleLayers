@@ -4,6 +4,7 @@ Clipping logic for the Clip Multiple Layers plugin.
 """
 
 import os
+import re
 import tempfile
 
 from osgeo import gdal
@@ -11,6 +12,7 @@ from qgis import processing
 from qgis.core import (
     Qgis,
     QgsCoordinateTransform,
+    QgsFileUtils,
     QgsProject,
     QgsRasterFileWriter,
     QgsRasterLayer,
@@ -27,30 +29,52 @@ from .utils import check_single_geom_type, get_unique_output_path
 class LayerClipper:
     """Handles clipping operations for vector and raster layers."""
 
-    def __init__(self, iface, folder_name, dlg):
+    def __init__(self, iface, folder_name, dlg, gpkg_output_path=None):
         self.iface = iface
         self.folder_name = folder_name
         self.dlg = dlg
+        self.gpkg_output_path = gpkg_output_path
+        self.gpkg_layer_names = set()
         self.multi_support_error = []
         self.multi_support_error_processing = []
+
+    def _get_gpkg_layer_name(self, layer, layer_type):
+        """Return a unique, safe table name for an output layer."""
+        safe_name = QgsFileUtils.stringToSafeFilename(layer.name())
+        safe_name = re.sub(r"[^A-Za-z0-9_]+", "_", safe_name).strip("_")
+        base_name = f"{layer_type}_clip_{safe_name or 'layer'}"
+        layer_name = base_name
+        suffix = 1
+        while layer_name.lower() in self.gpkg_layer_names:
+            layer_name = f"{base_name}_{suffix}"
+            suffix += 1
+        self.gpkg_layer_names.add(layer_name.lower())
+        return layer_name
 
     def clip_vector(self, layer, mask):
         """Clip a vector layer with the given mask."""
         index = self.dlg.comboBoxVectorFormat.currentIndex()
         vector_format = self.dlg.comboBoxVectorFormat.itemData(index)
 
-        base_output = os.path.join(
-            self.folder_name,
-            "vectors",
-            f"clip_{layer.name()}"
-        )
-        extension = vector_format.globs[0].lstrip("*")
-        base_output = get_unique_output_path(base_output, extension)
+        gpkg_layer_name = None
+        if self.gpkg_output_path:
+            base_output = self.gpkg_output_path
+            driver_name = "GPKG"
+            gpkg_layer_name = self._get_gpkg_layer_name(layer, "vector")
+        else:
+            base_output = os.path.join(
+                self.folder_name,
+                "vectors",
+                f"clip_{layer.name()}"
+            )
+            extension = vector_format.globs[0].lstrip("*")
+            base_output = get_unique_output_path(base_output, extension)
+            driver_name = vector_format.driverName
 
         # Check for multi-geometry issues
         if (
             not check_single_geom_type(layer)
-            and vector_format.driverName in FORMAT_NO_MULTI
+            and driver_name in FORMAT_NO_MULTI
         ):
             self.multi_support_error.append(layer)
             return
@@ -63,23 +87,30 @@ class LayerClipper:
         # Check processing result for multi-geometry
         if (
             not check_single_geom_type(result["OUTPUT"])
-            and vector_format.driverName in FORMAT_NO_MULTI
+            and driver_name in FORMAT_NO_MULTI
         ):
             self.multi_support_error_processing.append(layer)
             return
 
         options = QgsVectorFileWriter.SaveVectorOptions()
         options.fileEncoding = layer.dataProvider().encoding()
-        options.driverName = vector_format.driverName
+        options.driverName = driver_name
         options.fileEncoding = "UTF-8"
+        if gpkg_layer_name is not None:
+            options.layerName = gpkg_layer_name
+            if os.path.exists(self.gpkg_output_path):
+                options.actionOnExistingFile = (
+                    QgsVectorFileWriter.ActionOnExistingFile
+                    .CreateOrOverwriteLayer
+                )
 
-        write = QgsRasterFileWriter.writeAsVectorFormatV3
-
-        error, error_msg, filename, _ = write(
-            layer=result["OUTPUT"],
-            fileName=base_output,
-            transformContext=QgsProject.instance().transformContext(),
-            options=options,
+        error, error_msg, filename, _ = (
+            QgsVectorFileWriter.writeAsVectorFormatV3(
+                layer=result["OUTPUT"],
+                fileName=base_output,
+                transformContext=QgsProject.instance().transformContext(),
+                options=options,
+            )
         )
 
         if error != QgsVectorFileWriter.NoError:
@@ -92,12 +123,24 @@ class LayerClipper:
 
         # Save style if checked
         if self.dlg.checkBoxSaveStyle.isChecked():
-            qml_output = os.path.splitext(filename)[0] + ".qml"
+            if gpkg_layer_name is not None:
+                qml_output = os.path.join(
+                    os.path.dirname(filename),
+                    f"{gpkg_layer_name}.qml"
+                )
+            else:
+                qml_output = os.path.splitext(filename)[0] + ".qml"
             layer.saveNamedStyle(qml_output)
 
         # Load layer if checked
         if self.dlg.checkBoxLoadClippedLayers.isChecked():
-            out = self.iface.addVectorLayer(filename, "", "ogr")
+            if gpkg_layer_name is not None:
+                vector_uri = f"{filename}|layername={gpkg_layer_name}"
+                out = self.iface.addVectorLayer(
+                    vector_uri, layer.name(), "ogr"
+                )
+            else:
+                out = self.iface.addVectorLayer(filename, "", "ogr")
             if not out:
                 self.iface.messageBar().pushMessage(
                     "Error", f"Could not load {filename}", level=Qgis.Warning
@@ -172,20 +215,33 @@ class LayerClipper:
 
     def clip_raster(self, layer, mask):
         """Clip a raster layer with the given mask."""
+        output_layer_name = layer.name()
         tmp_dir = None
         if layer.providerType() != "gdal":
             layer, tmp_dir = self._convert_to_gdal(layer, mask)
             if layer is None:
                 return
 
-        filename = layer.name()
-        file_extension = self._get_raster_extension(layer)
-        base_output = os.path.join(
-            self.folder_name,
-            "rasters",
-            f"clip_{filename}"
-        )
-        output = get_unique_output_path(base_output, f".{file_extension}")
+        gpkg_layer_name = None
+        if self.gpkg_output_path:
+            output = self.gpkg_output_path
+            gpkg_layer_name = self._get_gpkg_layer_name(layer, "raster")
+            creation_options = (
+                "APPEND_SUBDATASET=YES|"
+                f"RASTER_TABLE={gpkg_layer_name}"
+            )
+        else:
+            filename = layer.name()
+            file_extension = self._get_raster_extension(layer)
+            base_output = os.path.join(
+                self.folder_name,
+                "rasters",
+                f"clip_{filename}"
+            )
+            output = get_unique_output_path(
+                base_output, f".{file_extension}"
+            )
+            creation_options = ""
 
         processing.run(
             "gdal:cliprasterbymasklayer",
@@ -193,7 +249,8 @@ class LayerClipper:
                 "INPUT": layer,
                 "MASK": mask,
                 "CROP_TO_CUTLINE": True,
-                "OUTPUT": output
+                "CREATION_OPTIONS": creation_options,
+                "OUTPUT": output,
             },
         )
 
@@ -202,7 +259,10 @@ class LayerClipper:
             tmp_dir.cleanup()
 
         if self.dlg.checkBoxLoadClippedLayers.isChecked():
-            out = self.iface.addRasterLayer(output, "")
+            raster_uri = output
+            if gpkg_layer_name is not None:
+                raster_uri = f"GPKG:{output}:{gpkg_layer_name}"
+            out = self.iface.addRasterLayer(raster_uri, output_layer_name)
             if out is None or not out.isValid():
                 self.iface.messageBar().pushMessage(
                     "Error", f"Could not load {output}", level=Qgis.Warning

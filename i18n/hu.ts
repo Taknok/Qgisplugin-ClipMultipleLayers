@@ -50,6 +50,16 @@
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
+        <source>Create a subfolder named after the mask layer</source>
+        <translation>Almappa létrehozása a maszkréteg nevével</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
+        <source>Store all clipped layers in one GeoPackage</source>
+        <translation>Az összes kivágott réteg mentése egy GeoPackage-fájlba</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
         <source>Vector format:</source>
         <translation>Vektoros formátum:</translation>
     </message>
@@ -85,8 +95,7 @@
     </message>
     <message>
         <location filename="../src/ui/clip_multiple_layers_dialog_base.ui" line="0" />
-        <source>&lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues"&gt;Signal issues&lt;/a&gt;. &lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/wiki"&gt;Tutorial&lt;/a&gt;. Support me on &lt;a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=4DC3A78C398HW"&gt;Paypal&lt;/a&gt;.</source>
+        <source>&lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues"&gt;Report issues&lt;/a&gt;. &lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/wiki"&gt;Tutorial&lt;/a&gt;. Support me on &lt;a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=4DC3A78C398HW"&gt;Paypal&lt;/a&gt;.</source>
         <translation>&lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/issues"&gt;Hibák jelzése&lt;/a&gt;. &lt;a href="https://github.com/Taknok/Qgisplugin-ClipMultipleLayers/wiki"&gt;Útmutató&lt;/a&gt;. Támogass a &lt;a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=4DC3A78C398HW"&gt;PayPal-on&lt;/a&gt;.</translation>
     </message>
-</context>
-</TS>
+</context></TS>

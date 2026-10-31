@@ -14,6 +14,7 @@ from qgis.PyQt.QtWidgets import QAction, QMessageBox, QProgressBar
 
 from .clip_multiple_layers_dialog import ClipMultipleLayersDialog
 from .clipper import LayerClipper
+from .utils import get_unique_output_path
 
 
 class ClipMultipleLayers:
@@ -169,14 +170,27 @@ class ClipMultipleLayers:
             )
             return
 
-        # Create output directories
-        vector_dir = os.path.join(folder_name, "vectors")
-        raster_dir = os.path.join(folder_name, "rasters")
-        os.makedirs(vector_dir, exist_ok=True)
-        os.makedirs(raster_dir, exist_ok=True)
+        gpkg_output_path = None
+        if self.dlg.checkBoxSingleGeoPackage.isChecked():
+            os.makedirs(folder_name, exist_ok=True)
+            gpkg_output_path = get_unique_output_path(
+                os.path.join(folder_name, "clipped_layers"),
+                ".gpkg",
+            )
+        else:
+            # Create output directories
+            vector_dir = os.path.join(folder_name, "vectors")
+            raster_dir = os.path.join(folder_name, "rasters")
+            os.makedirs(vector_dir, exist_ok=True)
+            os.makedirs(raster_dir, exist_ok=True)
 
         # Initialize clipper
-        clipper = LayerClipper(self.iface, folder_name, self.dlg)
+        clipper = LayerClipper(
+            self.iface,
+            folder_name,
+            self.dlg,
+            gpkg_output_path,
+        )
 
         # Exclude the mask layer from the selected layers to avoid clipping it
         try:
@@ -225,6 +239,7 @@ class ClipMultipleLayers:
         # Show success message
         self.iface.messageBar().pushMessage(
             "Success",
-            f"Clipping completed. Output saved to {folder_name}",
+            "Clipping completed. Output saved to "
+            f"{gpkg_output_path or folder_name}",
             level=Qgis.Success,
         )

@@ -1,0 +1,33 @@
+{
+  "name": "Clip Multiple Layers development",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "containerEnv": {
+    "DISPLAY": "${localEnv:DISPLAY}",
+    "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
+    "XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir",
+    "PYTHONPATH": "/usr/share/qgis/python:/usr/share/qgis/python/plugins",
+    "QT_QPA_PLATFORM": "wayland",
+    "QT_X11_NO_MITSHM": "1"
+  },
+  "remoteEnv": {
+    "PATH": "${containerWorkspaceFolder}/.venv/bin:${containerEnv:PATH}"
+  },
+  "mounts": [
+    "source=/mnt/wslg,target=/mnt/wslg,type=bind,readonly"
+  ],
+  "postCreateCommand": "python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+      },
+      "extensions": [
+        "ms-python.python"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}
