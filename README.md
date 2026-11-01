@@ -53,9 +53,6 @@ bash scripts/update-strings.sh
 
 # 2. Compile all translations
 bash scripts/compile-translation.sh
-
-# 3. Compile the Qt resources
-bash scripts/compile-resources.sh
 ```
 
 ### 1. Load the plugin dynamically in QGIS
@@ -79,19 +76,16 @@ bash scripts/update-strings.sh
 bash scripts/compile-translation.sh
 ```
 
-### 4. Compile resources
-For icon.
-```bash
-bash scripts/compile-resources.sh
-```
-
-### 5. UI editing
+### 4. UI editing
 Edit the UI file using Qt Designer (Qt Creator): `ClipMultipleLayers/src/ui/clip_multiple_layers_dialog_base.ui`
 
 When using `pb_tool`, run it from the `ClipMultipleLayers/` directory so its
 paths resolve relative to the plugin sources.
 
-### 6. Automated releases
+The plugin icon is loaded directly from `icon.png`; no Qt resource compilation
+is needed.
+
+### 5. Automated releases
 
 Pushes to `master` run semantic-release. Commit messages follow Conventional
 Commits: `fix:` creates a patch release, `feat:` a minor release, and a
