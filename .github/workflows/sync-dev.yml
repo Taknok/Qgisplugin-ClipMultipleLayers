@@ -1,4 +1,4 @@
-name: Sync dev with main
+name: Sync dev with master
 
 on:
   workflow_call:
@@ -24,6 +24,6 @@ jobs:
       - name: Sync dev branch
         run: |
           git fetch origin
-          git checkout dev
-          git merge --ff-only origin/main
+          git checkout -B dev origin/dev
+          git merge --ff-only origin/master
           git push origin dev

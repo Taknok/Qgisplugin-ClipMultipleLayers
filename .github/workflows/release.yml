@@ -105,3 +105,10 @@ jobs:
             release_args+=(--github-token "$GITHUB_TOKEN")
           fi
           qgis-plugin-ci "${release_args[@]}"
+
+  sync-dev:
+    needs: [semantic-release, publish-qgis-plugin]
+    if: github.event_name == 'push' && needs.semantic-release.outputs.released == 'true'
+    uses: ./.github/workflows/sync-dev.yml
+    permissions:
+      contents: write
