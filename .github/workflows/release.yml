@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  semantic-release:
+    runs-on: ubuntu-latest
+    outputs:
+      released: ${{ steps.release.outputs.released }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+
+      - name: Install semantic-release
+        run: npm install --no-package-lock
+
+      - name: Run semantic-release
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "released=false" >> "$GITHUB_OUTPUT"
+          npm exec -- semantic-release
+
+  publish-qgis-plugin:
+    needs: semantic-release
+    if: needs.semantic-release.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v7
+
+      - name: Install qgis-plugin-ci
+        run: python -m pip install qgis-plugin-ci
+
+      - name: Package and publish to QGIS
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QGIS_PLUGIN_TOKEN: ${{ secrets.QGIS_PLUGIN_TOKEN }}
+          RELEASE_VERSION: ${{ needs.semantic-release.outputs.version }}
+        run: |
+          if [[ -z "$QGIS_PLUGIN_TOKEN" ]]; then
+            echo "::error::Set the QGIS_PLUGIN_TOKEN Actions secret before publishing."
+            exit 1
+          fi
+          qgis-plugin-ci release "$RELEASE_VERSION" \
+            --release-tag "v$RELEASE_VERSION" \
+            --qgis-token "$QGIS_PLUGIN_TOKEN" \
+            --github-token "$GITHUB_TOKEN" \
+            --allow-uncommitted-changes \
+            --disable-submodule-update

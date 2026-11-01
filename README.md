@@ -5,7 +5,7 @@
 
 ## Description
 <p align="center">
-<img height="400em" alt="dialog3" src="https://github.com/user-attachments/assets/0e90da45-996c-458c-8363-5525669d34e7" />
+<img height="400em" alt="screenshot of plugin ui" src="img/popup.png" />
 </p>
 This plugin allows you to clip multiple vector and raster layers using a selected mask layer. The resulting layers can then be loaded into the project.
 Optionally, create an output subfolder named after the selected mask layer.
@@ -24,6 +24,9 @@ Duplicate a `.ts` file for the new language and create a new PR.
 ## Developers
 
 ### 0. Development setup
+
+The plugin sources are in `ClipMultipleLayers/`; this directory is also the
+root of the plugin package published to QGIS.
 
 ```bash
 python -m virtualenv venv
@@ -46,7 +49,7 @@ Run these commands from the repository root inside the container:
 
 ```bash
 # 1. Extract UI strings into every translation file
-bash scripts/update-ui-translations.sh
+bash scripts/update-strings.sh
 
 # 2. Compile all translations
 bash scripts/compile-translation.sh
@@ -58,12 +61,12 @@ bash scripts/compile-resources.sh
 ### 1. Load the plugin dynamically in QGIS
 Windows:
 ```cmd
-cmd /c mklink /d %APPDATA%\QGIS\QGIS4\profiles\default\python\plugins\ClipMultipleLayers D:\path\to\ClipMultipleLayers
+cmd /c mklink /d %APPDATA%\QGIS\QGIS4\profiles\default\python\plugins\ClipMultipleLayers D:\path\to\Qgisplugin-ClipMultipleLayers\ClipMultipleLayers
 ```
 
 Linux:
 ```bash
-ln -s ~/.local/share/QGIS/QGIS4/profiles/default/python/plugins/ClipMultipleLayers /path/to/ClipMultipleLayers
+ln -s /path/to/Qgisplugin-ClipMultipleLayers/ClipMultipleLayers ~/.local/share/QGIS/QGIS4/profiles/default/python/plugins/ClipMultipleLayers
 ```
 
 ### 2. Extract translatable strings from UI files
@@ -83,7 +86,22 @@ bash scripts/compile-resources.sh
 ```
 
 ### 5. UI editing
-Edit the UI file using Qt Designer (Qt Creator): `src/ui/clip_multiple_layers_dialog_base.ui`
+Edit the UI file using Qt Designer (Qt Creator): `ClipMultipleLayers/src/ui/clip_multiple_layers_dialog_base.ui`
+
+When using `pb_tool`, run it from the `ClipMultipleLayers/` directory so its
+paths resolve relative to the plugin sources.
+
+### 6. Automated releases
+
+Pushes to `master` run semantic-release. Commit messages follow Conventional
+Commits: `fix:` creates a patch release, `feat:` a minor release, and a
+breaking change creates a major release. The first workflow run creates the
+`v4.0.0` baseline tag if it is missing; that run does not publish a release.
+Subsequent releases are attached to a GitHub Release and uploaded to the QGIS
+plugin repository.
+
+Before the first release, add an Actions repository secret named
+`QGIS_PLUGIN_TOKEN` using a token generated from the QGIS plugin page.
 
 ## Donation
 If you find this plugin useful, feel free [to support me](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=4DC3A78C398HW)

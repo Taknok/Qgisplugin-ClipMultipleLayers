@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+cd "$script_dir/../ClipMultipleLayers"
+
 temporary_output=$(mktemp)
 trap 'rm -f "$temporary_output"' EXIT
 
