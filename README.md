@@ -103,6 +103,11 @@ plugin repository.
 Before the first release, add an Actions repository secret named
 `QGIS_PLUGIN_TOKEN` using a token generated from the QGIS plugin page.
 
+To retry publishing an existing release, run the **Release** workflow manually
+from `master` and enter the version without the `v` prefix. The semantic-release
+job is skipped, and the plugin is packaged from the matching `vX.Y.Z` tag. An
+existing ZIP asset on that GitHub release is not uploaded a second time.
+
 ## Donation
 If you find this plugin useful, feel free [to support me](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=4DC3A78C398HW)
 
