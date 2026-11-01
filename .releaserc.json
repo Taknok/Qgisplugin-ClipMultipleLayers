@@ -1,0 +1,15 @@
+{
+  "branches": ["master"],
+  "tagFormat": "v${version}",
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/exec",
+      {
+        "successCmd": "printf 'released=true\\nversion=${nextRelease.version}\\n' >> \"$GITHUB_OUTPUT\""
+      }
+    ],
+    "@semantic-release/github"
+  ]
+}
