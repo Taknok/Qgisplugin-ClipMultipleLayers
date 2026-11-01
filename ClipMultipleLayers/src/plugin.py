@@ -122,7 +122,9 @@ class ClipMultipleLayers:
         alignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
         self.progress.setAlignment(alignment)
         self.progressMessageBar.layout().addWidget(self.progress)
-        self.iface.messageBar().pushWidget(self.progressMessageBar, Qgis.Info)
+        self.iface.messageBar().pushWidget(
+            self.progressMessageBar, Qgis.MessageLevel.Info
+        )
         self.progression = 0
 
     def run(self):
@@ -193,14 +195,10 @@ class ClipMultipleLayers:
         )
 
         # Exclude the mask layer from the selected layers to avoid clipping it
-        try:
-            mask_id = mask_layer.id()
-            selected_layers = [
-                layer for layer in selected_layers if layer.id() != mask_id
-            ]
-        except Exception:
-            # If anything goes wrong obtaining ids, fall back to original list
-            pass
+        mask_id = mask_layer.id()
+        selected_layers = [
+            layer for layer in selected_layers if layer.id() != mask_id
+        ]
 
         self.createProgressBar(selected_layers)
 
@@ -213,7 +211,7 @@ class ClipMultipleLayers:
                     self.iface.messageBar().pushMessage(
                         "Error",
                         f"Failed to clip vector layer {layer.name()}:{str(e)}",
-                        level=Qgis.Critical,
+                        level=Qgis.MessageLevel.Critical,
                     )
             elif isinstance(layer, QgsRasterLayer):
                 try:
@@ -222,7 +220,7 @@ class ClipMultipleLayers:
                     self.iface.messageBar().pushMessage(
                         "Error",
                         f"Failed to clip raster layer {layer.name()}:{str(e)}",
-                        level=Qgis.Critical,
+                        level=Qgis.MessageLevel.Critical,
                     )
             self.progression += 1
             self.progress.setValue(self.progression)
@@ -241,5 +239,5 @@ class ClipMultipleLayers:
             "Success",
             "Clipping completed. Output saved to "
             f"{gpkg_output_path or folder_name}",
-            level=Qgis.Success,
+            level=Qgis.MessageLevel.Success,
         )

@@ -60,10 +60,7 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, FORM_CLASS):
     def showEvent(self, event):
         """Refresh dynamic parts of the dialog each time it's shown."""
         # Update the layer selection to reflect current project layers
-        try:
-            self._populate_layer_selection()
-        except Exception:
-            pass
+        self._populate_layer_selection()
         super(ClipMultipleLayersDialog, self).showEvent(event)
 
     def populate_dialog(self):
@@ -77,8 +74,9 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, FORM_CLASS):
         polygon_count = 0
         for layer in layers:
             if (
-                layer.type() == QgsMapLayer.VectorLayer
-                and layer.geometryType() == QgsWkbTypes.PolygonGeometry
+                layer.type() == QgsMapLayer.LayerType.VectorLayer
+                and layer.geometryType()
+                == QgsWkbTypes.GeometryType.PolygonGeometry
             ):
                 self.comboBoxMaskLayer.addItem(layer.name(), layer)
                 polygon_count += 1
@@ -96,7 +94,7 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, FORM_CLASS):
             iface.messageBar().pushMessage(
                 "Warning",
                 "No polygon layer in current project",
-                level=Qgis.Warning
+                level=Qgis.MessageLevel.Warning
             )
 
     def _populate_layer_selection(self):
@@ -175,20 +173,18 @@ class ClipMultipleLayersDialog(QtWidgets.QDialog, FORM_CLASS):
             if layer_id is None:
                 continue
             # Ensure we pass a native string id to mapLayer
-            try:
-                layer_id = str(layer_id)
-            except Exception:
-                continue
+
+            layer_id = str(layer_id)
 
             layer = QgsProject.instance().mapLayer(layer_id)
             if layer is None:
                 continue
 
-            if layer.type() == QgsMapLayer.VectorLayer and \
+            if layer.type() == QgsMapLayer.LayerType.VectorLayer and \
                     self.checkVector.isChecked():
                 selected_layers.append(layer)
             elif (
-                layer.type() == QgsMapLayer.RasterLayer and
+                layer.type() == QgsMapLayer.LayerType.RasterLayer and
                     self.checkRaster.isChecked()
             ):
                 selected_layers.append(layer)

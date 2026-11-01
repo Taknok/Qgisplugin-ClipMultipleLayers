@@ -113,11 +113,11 @@ class LayerClipper:
             )
         )
 
-        if error != QgsVectorFileWriter.NoError:
+        if error != QgsVectorFileWriter.WriterError.NoError:
             self.iface.messageBar().pushMessage(
                 "Error",
                 f"Cannot write file {base_output}",
-                level=Qgis.Critical
+                level=Qgis.MessageLevel.Critical
             )
             raise RuntimeError(error_msg)
 
@@ -143,7 +143,9 @@ class LayerClipper:
                 out = self.iface.addVectorLayer(filename, "", "ogr")
             if not out:
                 self.iface.messageBar().pushMessage(
-                    "Error", f"Could not load {filename}", level=Qgis.Warning
+                    "Error",
+                    f"Could not load {filename}",
+                    level=Qgis.MessageLevel.Warning
                 )
 
     def _convert_to_gdal(self, layer, mask):
@@ -164,7 +166,7 @@ class LayerClipper:
             self.iface.messageBar().pushMessage(
                 "Error",
                 f"Cannot set pipe provider: {layer.name()}",
-                level=Qgis.Warning
+                level=Qgis.MessageLevel.Warning
             )
             return None, None
 
@@ -172,7 +174,7 @@ class LayerClipper:
             self.iface.messageBar().pushMessage(
                 "Error",
                 f"Cannot set pipe projector: {layer.name()}",
-                level=Qgis.Warning,
+                level=Qgis.MessageLevel.Warning,
             )
             return None, None
 
@@ -194,13 +196,13 @@ class LayerClipper:
             coord_transform_ctx,
         )
 
-        if error == QgsRasterFileWriter.NoError:
+        if error == QgsRasterFileWriter.WriterError.NoError:
             return QgsRasterLayer(out_file, layer.name()), out_dir
         else:
             self.iface.messageBar().pushMessage(
                 "Error",
                 f"Could not save temp raster: {layer.name()}",
-                level=Qgis.Warning,
+                level=Qgis.MessageLevel.Warning,
             )
             return None, None
 
@@ -265,7 +267,9 @@ class LayerClipper:
             out = self.iface.addRasterLayer(raster_uri, output_layer_name)
             if out is None or not out.isValid():
                 self.iface.messageBar().pushMessage(
-                    "Error", f"Could not load {output}", level=Qgis.Warning
+                    "Error",
+                    f"Could not load {output}",
+                    level=Qgis.MessageLevel.Warning
                 )
 
     def show_error_popup(self, error_arr):
@@ -288,4 +292,6 @@ class LayerClipper:
         button.setText("More")
         button.clicked.connect(lambda: self.show_error_popup(error_arr))
         widget.layout().addWidget(button)
-        self.iface.messageBar().pushWidget(widget, Qgis.Warning)
+        self.iface.messageBar().pushWidget(
+            widget, Qgis.MessageLevel.Warning
+        )
